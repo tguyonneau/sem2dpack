@@ -30,12 +30,21 @@ class Input:
 
     def set_materials(self, mat_list):
         self.mat_list = mat_list
+    
+    def set_snapshot(self, itd, fields, components, ps=False, bin=False):
+        self.snap_dic = {}
+        self.snap_dic['itd'] = itd
+        self.snap_dic['fields'] = fields
+        self.snap_dic['components'] = components
+        self.snap_dic['ps'] = ps
+        self.snap_dic['bin'] = bin
 
     def write_file(self):
         self.write_general_parameters()
         self.write_mesh()
         self.write_materials()
         self.write_time_scheme()
+        self.write_snapshot()
 
     def write_from_dictionnary(self, target_dic):
         input_file = open(self.path, 'a')
@@ -44,6 +53,11 @@ class Input:
             if target_dic[param] != None :
                 if type(target_dic[param]) is str:
                     input_file.write(f" {param}='{target_dic[param]}',")
+                elif type(target_dic[param]) is bool:
+                    if target_dic[param] :
+                        input_file.write(f" {param}=T,")
+                    else :
+                        input_file.write(f" {param}=F,")
                 else :
                     if isinstance(target_dic[param], Iterable):
                         input_file.write(f" {param}=")
@@ -78,15 +92,6 @@ class Input:
         input_file.close()
         self.write_from_dictionnary(self.general_dic)
 
-    def write_time_scheme(self):
-        input_file = open(self.path, 'a')
-        input_file.write("\n")
-        input_file.write("\n #---------- Time scheme settings ----------")
-        input_file.write("\n")
-        input_file.write("\n&TIME")
-        input_file.close()
-        self.write_from_dictionnary(self.time_scheme_dic)
-
     def write_mesh(self):
         input_file = open(self.path, 'a')
         input_file.write("\n")
@@ -115,6 +120,24 @@ class Input:
                 input_file.write("\n&MAT_IWAN")
             input_file.close()
             self.write_from_dictionnary(m.mat_dic)
+
+    def write_time_scheme(self):
+        input_file = open(self.path, 'a')
+        input_file.write("\n")
+        input_file.write("\n #---------- Time scheme settings ----------")
+        input_file.write("\n")
+        input_file.write("\n&TIME")
+        input_file.close()
+        self.write_from_dictionnary(self.time_scheme_dic)
+
+    def write_snapshot(self):
+        input_file = open(self.path, 'a')
+        input_file.write("\n")
+        input_file.write("\n #---------- Snapshot output settings ----------")
+        input_file.write("\n")
+        input_file.write("\n&SNAP_DEF")
+        input_file.close()
+        self.write_from_dictionnary(self.snap_dic)
             
 
 
@@ -169,6 +192,8 @@ Mat2.set_properties(rho=1., cp=2., cs=3.)
 
 mesh = Mesh('LAYERED')
 mesh.set_properties(xlim=(0.,5.), zmin=-20., nx=1, file="layers")
+
+Test.set_snapshot(1000, 'V', 'xz', False, False)
 
 Test.set_mesh(mesh)
 Test.set_materials([Mat,Mat2])
