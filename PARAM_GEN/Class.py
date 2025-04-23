@@ -50,7 +50,6 @@ class Input:
         self.snap_dic['ps'] = ps
         self.snap_dic['bin'] = bin
     
-
     def write_file(self):
         self.write_general_parameters()
         self.write_mesh()
@@ -165,6 +164,11 @@ class Input:
 
 class Material():
     def __init__(self, tag, kind):
+        """
+        Available materials :
+        - ELAST 
+        - IWAN 
+        """
         self.tag = tag
         self.kind = kind
         self.mat_dic = {}
@@ -180,11 +184,20 @@ class Material():
             self.mat_dic['gref'] = 0
 
     def set_properties(self, **kwargs):
+        """
+        - ELAST : rho, cp, cs
+        - IWAN : rho, cp, cs, Nspr, gref
+        """
         for key, val in kwargs.items():
             self.mat_dic[key] = val
         
 class Mesh():
     def __init__(self, method):
+        """
+        Available meshing method :
+        - LAYERED
+        - MESH2D
+        """
         self.method = method
         self.mesh_dic = {}
         if method == 'LAYERED':
@@ -196,6 +209,10 @@ class Mesh():
             self.mesh_dic['file'] = 0
 
     def set_properties(self, **kwargs):
+        """
+        - LAYERED : xlim, zmin, nx, file
+        - MESH2D : file
+        """
         for key, val in kwargs.items():
             self.mesh_dic[key] = val
 
