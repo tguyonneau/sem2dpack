@@ -30,6 +30,9 @@ class Input:
 
     def set_mesh(self, mesh):
         self.mesh = mesh
+    
+    def set_BC(self, BC_list):
+        self.BC_list = BC_list
 
     def set_materials(self, mat_list):
         self.mat_list = mat_list
@@ -53,6 +56,7 @@ class Input:
     def write_file(self):
         self.write_general_parameters()
         self.write_mesh()
+        self.write_BC()
         self.write_materials()
         self.write_time_scheme()
         self.write_receivers()
@@ -70,6 +74,8 @@ class Input:
                         input_file.write(f" {param}=T,")
                     else :
                         input_file.write(f" {param}=F,")
+                elif isinstance(target_dic[param],STF) :
+                    input_file.write(f" {param}='{target_dic[param].kind}',")
                 else :
                     if isinstance(target_dic[param], Iterable):
                         input_file.write(f" {param}=")
@@ -116,6 +122,35 @@ class Input:
             input_file.write("\n&MESH_MESH2D")
         input_file.close()
         self.write_from_dictionnary(self.mesh.mesh_dic)
+
+    def write_BC(self):
+        input_file = open(self.path, 'a')
+        input_file.write("\n")
+        input_file.write("\n #---------- Boundary conditions ----------")
+        input_file.close()
+        for bc in self.BC_list:
+            input_file = open(self.path, 'a')
+            input_file.write("\n")
+            if isinstance(bc.tags, Iterable):
+                input_file.write(f"\n&BC_DEF tags=")
+                for t in bc.tags:
+                    input_file.write(f"{t},")
+                input_file.write(f" kind='{bc.kind}' /")
+            else :
+                input_file.write(f"\n&BC_DEF tag={bc.tags}, kind='{bc.kind}' /")
+            if bc.kind == 'DIRNEU':
+                input_file.write("\n&BC_DIRNEU")
+            input_file.close()
+            self.write_from_dictionnary(bc.BC_dic)
+            for param in bc.BC_dic.keys():
+                if isinstance(bc.BC_dic[param],STF):
+                    if bc.BC_dic[param].kind=='TAB':
+                        input_file = open(self.path, 'a')
+                        input_file.write(f"\n&STF_TAB")
+                        input_file.close()
+                        self.write_from_dictionnary(bc.BC_dic[param].stf_dic)
+            
+
 
     def write_materials(self):
         input_file = open(self.path, 'a')
@@ -216,4 +251,49 @@ class Mesh():
         for key, val in kwargs.items():
             self.mesh_dic[key] = val
 
+class BC():
+    def __init__(self, tags, kind):
+        """
+        Available Boundary Conditions :
+        - PERIOD
+        - DIRNEU
+        """
+        self.tags = tags
+        self.kind = kind
+        self.BC_dic = {}
+        if kind == 'DIRNEU' :
+            self.BC_dic['h'] = 0
+            self.BC_dic['v'] = 0
+            self.BC_dic['hstf'] = 0
+            self.BC_dic['vstf'] = 0
+            self.BC_dic['borehole'] = 0
+    
+    def set_properties(self, **kwargs):
+        """
+        - DIRNEU : h, v, hstf, vstf, borehole
+        """
+        for key, val in kwargs.items():
+            self.BC_dic[key] = val
 
+
+class STF():
+    def __init__(self,kind):
+        """
+        Available sources :
+        - TAB
+        """
+        self.kind = kind
+        self.stf_dic = {}
+        if kind == 'TAB':
+            self.stf_dic['file'] = 0
+
+    def set_properties(self, **kwargs):
+        """
+        - TAB : file
+        """
+        for key, val in kwargs.items():
+            self.stf_dic[key] = val
+
+    
+
+        
