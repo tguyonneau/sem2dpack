@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from Functions import *
+from typing import Iterable
 
 class Input:
     def __init__(self, path):
@@ -24,13 +25,17 @@ class Input:
         self.time_scheme_dic['courant'] = courant
         self.time_scheme_dic['kind'] = kind
 
+    def set_mesh(self, mesh):
+        self.mesh = mesh
+
     def set_materials(self, mat_list):
         self.mat_list = mat_list
 
     def write_file(self):
         self.write_general_parameters()
-        self.write_time_scheme()
+        self.write_mesh()
         self.write_materials()
+        self.write_time_scheme()
 
     def write_from_dictionnary(self, target_dic):
         input_file = open(self.path, 'a')
@@ -39,11 +44,22 @@ class Input:
             if target_dic[param] != None :
                 if type(target_dic[param]) is str:
                     input_file.write(f" {param}='{target_dic[param]}',")
-                elif type(target_dic[param]) is float :
-                    mantissa, exponent = get_scientific_components(target_dic[param])
-                    input_file.write(f" {param}={mantissa}d{exponent},")
                 else :
-                    input_file.write(f" {param}={target_dic[param]},")
+                    if isinstance(target_dic[param], Iterable):
+                        input_file.write(f" {param}=")
+                        for val in target_dic[param] :
+                            if type(val) is float :
+                                mantissa, exponent = get_scientific_components(val)
+                                input_file.write(f"{mantissa}d{exponent},")
+                            else :
+                                input_file.write(f"{val},")
+
+                    else :
+                        if type(target_dic[param]) is float :
+                            mantissa, exponent = get_scientific_components(target_dic[param])
+                            input_file.write(f" {param}={mantissa}d{exponent},")
+                        else :
+                            input_file.write(f" {param}={target_dic[param]},")
         input_file.close()
         input_file = open(self.path, 'rb+')
         input_file.seek(-1,2)
@@ -70,6 +86,19 @@ class Input:
         input_file.write("\n&TIME")
         input_file.close()
         self.write_from_dictionnary(self.time_scheme_dic)
+
+    def write_mesh(self):
+        input_file = open(self.path, 'a')
+        input_file.write("\n")
+        input_file.write("\n #---------- Build the mesh ----------")
+        input_file.write("\n")
+        input_file.write(f"\n&MESH_DEF method='{self.mesh.method}' /")
+        if self.mesh.method == 'LAYERED':
+            input_file.write("\n&MESH_LAYERED")
+        elif self.mesh.method == 'MESH2D':
+            input_file.write("\n&MESH_MESH2D")
+        input_file.close()
+        self.write_from_dictionnary(self.mesh.mesh_dic)
 
     def write_materials(self):
         input_file = open(self.path, 'a')
@@ -109,6 +138,21 @@ class Material():
         for key, val in kwargs.items():
             self.mat_dic[key] = val
         
+class Mesh():
+    def __init__(self, method):
+        self.method = method
+        self.mesh_dic = {}
+        if method == 'LAYERED':
+            self.mesh_dic['xlim'] = (0,0)
+            self.mesh_dic['zmin'] = 0
+            self.mesh_dic['nx'] = 0
+            self.mesh_dic['file'] = 0
+        elif method== 'MESH2D':
+            self.mesh_dic['file'] = 0
+
+    def set_properties(self, **kwargs):
+        for key, val in kwargs.items():
+            self.mesh_dic[key] = val
 
 
 
@@ -123,6 +167,10 @@ Mat.set_properties(rho=1000., cp=100., cs=200., Nspr=50, gref=0.000365)
 Mat2 = Material(2, 'ELAST')    
 Mat2.set_properties(rho=1., cp=2., cs=3.)
 
+mesh = Mesh('LAYERED')
+mesh.set_properties(xlim=(0.,5.), zmin=-20., nx=1, file="layers")
+
+Test.set_mesh(mesh)
 Test.set_materials([Mat,Mat2])
 
 Test.write_file()
