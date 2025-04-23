@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from Functions import *
 
 class Input:
     def __init__(self, path):
@@ -38,8 +39,11 @@ class Input:
             if target_dic[param] != None :
                 if type(target_dic[param]) is str:
                     input_file.write(f" {param}='{target_dic[param]}',")
+                elif type(target_dic[param]) is float :
+                    mantissa, exponent = get_scientific_components(target_dic[param])
+                    input_file.write(f" {param}={mantissa}d{exponent},")
                 else :
-                    input_file.write(f" {param}={target_dic[param]},") 
+                    input_file.write(f" {param}={target_dic[param]},")
         input_file.close()
         input_file = open(self.path, 'rb+')
         input_file.seek(-1,2)
@@ -54,7 +58,7 @@ class Input:
         input_file.write("\n")
         input_file.write("\n #---------- General parameters ----------")
         input_file.write("\n")
-        input_file.write("&GENERAL")
+        input_file.write("\n&GENERAL")
         input_file.close()
         self.write_from_dictionnary(self.general_dic)
 
@@ -63,7 +67,7 @@ class Input:
         input_file.write("\n")
         input_file.write("\n #---------- Time scheme settings ----------")
         input_file.write("\n")
-        input_file.write("&TIME")
+        input_file.write("\n&TIME")
         input_file.close()
         self.write_from_dictionnary(self.time_scheme_dic)
 
@@ -74,6 +78,7 @@ class Input:
         input_file.close()
         for m in self.mat_list:
             input_file = open(self.path, 'a')
+            input_file.write("\n")
             input_file.write(f"\n&MATERIAL tag={m.tag}, kind='{m.kind}' /")
             if m.kind == 'ELAST':
                 input_file.write("\n&MAT_ELASTIC")
@@ -113,10 +118,10 @@ Test.set_time_scheme(TotalTime=10, dt=1e-5, courant=0.3)
 
 
 Mat = Material(1, "IWAN")
-Mat.set_properties(rho=1000, cp=100, cs=200, Nspr=50, gref=0.000365)
+Mat.set_properties(rho=1000., cp=100., cs=200., Nspr=50, gref=0.000365)
 
 Mat2 = Material(2, 'ELAST')    
-Mat2.set_properties(rho=1, cp=2, cs=3)
+Mat2.set_properties(rho=1., cp=2., cs=3.)
 
 Test.set_materials([Mat,Mat2])
 
