@@ -5,7 +5,10 @@ from typing import Iterable
 
 class Input:
     def __init__(self, path):
-        os.remove(path)
+        try :
+            os.remove(path)
+        except FileNotFoundError:
+            pass
         self.path = path
 
     def set_general_parameters(self, ndof, ItInfo, ngll=5, iexec=1, fmax=None, title=None, verbose='1011'):
