@@ -22,7 +22,7 @@ def preview_stations(X,Z):
     plt.show()
 
 def write_stations_file(path, X, Z):
-    file = open(path, 'w')
+    file = open(path, 'w+')
     for i in range(X.size):
         x = X[i]
         m_x, e_x = get_scientific_components(x)
@@ -31,3 +31,10 @@ def write_stations_file(path, X, Z):
         file.write(f"{m_x}d{e_x}\t{m_z}d{e_z}\n")
     file.close()
 
+def write_layers_file(path, layers, n_z):
+    file = open(path, 'w+')
+    level = layers[0]-layers
+    for i in range(len(layers)):
+        l = level[i]
+        m_l, e_l = get_scientific_components(l)
+        file.write(f"{m_l}d{e_l}\t{n_z[i]}\t{i+1}\n")

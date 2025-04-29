@@ -24,3 +24,4 @@ def Generate_Prenolin_PSV(dir, xlim, zmin, TotalTime=10., dt=1e-5, nx=1, nx_stat
     write_stations_file(dir+"/stations",X,Z)
     Prenolin_PSV.set_receivers(file='stations', isamp=20, field='V', AtNode=False, extra=True)
     Prenolin_PSV.set_snapshot(itd=itd, fields='V', components='xz', ps=False, bin=bin)
+    return Prenolin_PSV
