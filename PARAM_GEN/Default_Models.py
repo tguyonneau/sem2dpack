@@ -18,7 +18,7 @@ def Generate_Prenolin_PSV(dir, xlim, zmin, TotalTime=10., dt=1e-5, nx=1, nx_stat
     BC2.set_properties(h='N', v='N', hstf=source, vstf=source, borehole=True)
     Prenolin_PSV.set_BC([BC1,BC2])
     #----- Set time scheme --
-    Prenolin_PSV.set_time_scheme(TotalTime=10., dt=1e-5, courant=0.3, kind='leapfrog')
+    Prenolin_PSV.set_time_scheme(TotalTime=TotalTime, dt=1e-5, courant=0.3, kind='leapfrog')
     #Set receivers & snapshot
     X,Z=generate_stations_grid(xlim,[zmin,0],1,2)
     write_stations_file(dir+"/stations",X,Z)

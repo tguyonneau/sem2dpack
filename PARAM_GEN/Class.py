@@ -163,6 +163,8 @@ class Input:
                 input_file.write("\n&MAT_ELASTIC")
             elif m.kind == 'IWAN':
                 input_file.write("\n&MAT_IWAN")
+            elif m.kind == 'VISLA':
+                input_file.write("\n&MAT_VISLA")
             input_file.close()
             self.write_from_dictionnary(m.mat_dic)
 
@@ -200,7 +202,8 @@ class Material():
         """
         Available materials :
         - ELAST 
-        - IWAN 
+        - IWAN
+        - VISLA
         """
         self.tag = tag
         self.kind = kind
@@ -220,6 +223,7 @@ class Material():
         """
         - ELAST : rho, cp, cs
         - IWAN : rho, cp, cs, Nspr, gref
+        - VISLA : rho, cp, cs, Qp, Qs, fr
         """
         for key, val in kwargs.items():
             self.mat_dic[key] = val

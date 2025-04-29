@@ -33,8 +33,11 @@ def write_stations_file(path, X, Z):
 
 def write_layers_file(path, layers, n_z):
     file = open(path, 'w+')
-    level = layers[0]-layers
+    level = [0]
+    for i in range(1,len(layers)):
+        level.append(level[-1]-layers[i-1])
     for i in range(len(layers)):
         l = level[i]
         m_l, e_l = get_scientific_components(l)
         file.write(f"{m_l}d{e_l}\t{n_z[i]}\t{i+1}\n")
+    file.close()
