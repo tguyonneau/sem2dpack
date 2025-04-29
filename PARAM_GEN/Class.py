@@ -149,8 +149,6 @@ class Input:
                         input_file.write(f"\n&STF_TAB")
                         input_file.close()
                         self.write_from_dictionnary(bc.BC_dic[param].stf_dic)
-            
-
 
     def write_materials(self):
         input_file = open(self.path, 'a')
@@ -274,7 +272,6 @@ class BC():
         """
         for key, val in kwargs.items():
             self.BC_dic[key] = val
-
 
 class STF():
     def __init__(self,kind):
