@@ -3,6 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from houches_fb import *
 from scipy.integrate import cumulative_simpson
 
 
@@ -218,4 +219,46 @@ def plot_seismogram(ax, station, comp, val, dic):
         raise Exception('Not a valid component')
     ax.set_xlabel("Time (s)")
     
+def plot_input_signal(SEM, config):
+    #Load input signal
+    #input_signal_path = SEM.directory + '/' + 'SourcesTime_sem2d.tab'
+    input_signal_path = SEM.directory + '/inputp1'
+    input_signal = np.genfromtxt(open(input_signal_path,'r'))
+    time = input_signal[:,0]
+    input_velocity = input_signal[:,1]
+
+    #Create figure
+    fig = plt.figure()
+    fig.subplots_adjust(wspace=0.5)
+    fig.suptitle("Input signal")
+
+    #Create velocity plot
+    ax_V = fig.add_subplot(1,2,1, aspect='auto')
+    ax_V.set_xlabel("Time (s)")
+    ax_V.set_ylabel("Velocity (m/s)")
+    ax_V.set_title("Input velocity")
+    ax_V.grid(True)
+    ax_V.plot(time, input_velocity)
     
+    if config=='VU':
+        #Create displacement plot
+        input_displacement = compute_displacement(input_velocity, time)
+        ax_D = fig.add_subplot(1,2,2, aspect='auto')
+        ax_D.set_xlabel("Time (s)")
+        ax_D.set_ylabel("Displacement (m)")
+        ax_D.set_title("Input displacement")
+        ax_D.grid(True)
+        ax_D.plot(time, input_displacement)
+    
+    elif config=='VF':
+        #Create Fourier plot
+        FFT, freq = fourier(input_velocity,time[1]-time[0])
+        ax_F = fig.add_subplot(1,2,2, aspect='auto')
+        ax_F.set_xlabel("Frequency (Hz)")
+        ax_F.set_ylabel("Spectral amplitude (m)")
+        ax_F.set_title("Fourier transform")
+        ax_F.grid(True)
+        ax_F.set_xscale('log')
+        ax_F.set_yscale('linear')
+        ax_F.set_xlim(0,50)
+        ax_F.plot(freq, FFT)
