@@ -218,11 +218,17 @@ def plot_seismogram(ax, station, comp, val, dic):
     else :
         raise Exception('Not a valid component')
     ax.set_xlabel("Time (s)")
-    
-def plot_input_signal(SEM, config):
+
+def zero_pad(signal, N):
+    return np.pad(signal, (0,N*signal.size), 'constant')
+
+def plot_input_signal(input_signal_path, config, pad=2):
+    """
+    Configurations :
+    - VU : Velocity (V) / Displacement (U) plot
+    - VF : Velocity (V) / Velocity Spectrum (F) plot
+    """
     #Load input signal
-    #input_signal_path = SEM.directory + '/' + 'SourcesTime_sem2d.tab'
-    input_signal_path = SEM.directory + '/inputp1'
     input_signal = np.genfromtxt(open(input_signal_path,'r'))
     time = input_signal[:,0]
     input_velocity = input_signal[:,1]
@@ -252,7 +258,7 @@ def plot_input_signal(SEM, config):
     
     elif config=='VF':
         #Create Fourier plot
-        FFT, freq = fourier(input_velocity,time[1]-time[0])
+        FFT, freq = fourier(zero_pad(input_velocity, N=2),time[1]-time[0])
         ax_F = fig.add_subplot(1,2,2, aspect='auto')
         ax_F.set_xlabel("Frequency (Hz)")
         ax_F.set_ylabel("Spectral amplitude (m)")
@@ -262,3 +268,14 @@ def plot_input_signal(SEM, config):
         ax_F.set_yscale('linear')
         ax_F.set_xlim(0,50)
         ax_F.plot(freq, FFT)
+
+def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
+    stations = []
+    level = [0]
+    for i in range(1,len(layers)):
+        level.append(level[-1]-layers[i-1])
+    Z_pos = (level + np.append(level[1:],zmin))/2
+    x = (xlim[0]+xlim[1])/2
+    for z in Z_pos:
+        stations.append(get_nearest_station(x, z, XSTA, ZSTA))
+    return np.array(stations)
