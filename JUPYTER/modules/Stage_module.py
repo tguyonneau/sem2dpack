@@ -222,7 +222,7 @@ def plot_seismogram(ax, station, comp, val, dic):
 def zero_pad(signal, N):
     return np.pad(signal, (0,N*signal.size), 'constant')
 
-def plot_input_signal(input_signal_path, config, pad=2):
+def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, pad=2, Amax=1e1):
     """
     Configurations :
     - VU : Velocity (V) / Displacement (U) plot
@@ -265,8 +265,9 @@ def plot_input_signal(input_signal_path, config, pad=2):
         ax_F.set_title("Fourier transform")
         ax_F.grid(True)
         ax_F.set_xscale('log')
-        ax_F.set_yscale('linear')
-        ax_F.set_xlim(0,50)
+        ax_F.set_yscale('log')
+        ax_F.set_xlim(fmin, fmax)
+        ax_F.set_ylim(1e-5, Amax)
         ax_F.plot(freq, FFT)
 
 def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
