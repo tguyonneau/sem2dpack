@@ -198,59 +198,46 @@ class Input:
 
 
 class Material():
-    def __init__(self, tag, kind):
+    def __init__(self, tag, kind, **kwargs):
         """
-        Available materials :
-        - ELAST 
-        - IWAN
-        - VISLA
+        | Available materials | Parameters |
+        |------------------|------------|
+        |       ELAST     | rho, cp, cs        |
+        |       IWAN      | rho, cp, cs, Nspr, gref        |
+        |       VISLA     | rho, cp, cs, Qp, Qs, fr        |
         """
         self.tag = tag
         self.kind = kind
         self.mat_dic = {}
-
-    def set_properties(self, **kwargs):
-        """
-        - ELAST : rho, cp, cs
-        - IWAN : rho, cp, cs, Nspr, gref
-        - VISLA : rho, cp, cs, Qp, Qs, fr
-        """
         for key, val in kwargs.items():
             self.mat_dic[key] = val
-        
+       
+       
 class Mesh():
-    def __init__(self, method):
+    def __init__(self, method, *kwargs):
         """
-        Available meshing method :
-        - LAYERED
-        - MESH2D
+        | Available Meshing | Parameters |
+        |------------------|------------|
+        |       LAYERED     | xlim, zmin, nx, file        |
+        |       MESH2D     | file    |
         """
         self.method = method
         self.mesh_dic = {}
-
-    def set_properties(self, **kwargs):
-        """
-        - LAYERED : xlim, zmin, nx, file
-        - MESH2D : file
-        """
         for key, val in kwargs.items():
             self.mesh_dic[key] = val
 
+
 class BC():
-    def __init__(self, tags, kind):
+    def __init__(self, tags, kind, **kwargs):
         """
-        Available Boundary Conditions :
-        - PERIOD
-        - DIRNEU
+        | Available BC | Parameters |
+        |------------------|------------|
+        |       PERIOD     | None        |
+        |       DIRNEU     | h, v, hstf, vstf, borehole     |
         """
         self.tags = tags
         self.kind = kind
         self.BC_dic = {}
-    
-    def set_properties(self, **kwargs):
-        """
-        - DIRNEU : h, v, hstf, vstf, borehole
-        """
         for key, val in kwargs.items():
             self.BC_dic[key] = val
 
@@ -258,10 +245,10 @@ class BC():
 class SRC():
     def __init__(self, stf, mechanism, coord, file=None):
         """
-        Available signal types :
-        - TAB
-        Available mechanisms :
-        - WAVE
+        | Parameters | Options |
+        |------------------|------------|
+        | Signal types | TAB, GAUSSIAN |
+        | Mechanism    | WAVE         |
         """
         self.stf = stf
         self.mechanism = mechanism
@@ -269,8 +256,9 @@ class SRC():
         self.file = file
         self.src_dic = {}
 
+
 class STF():
-    def __init__(self,kind):
+    def __init__(self, kind, **kwargs):
         """
         | Available sources | Parameters |
         |------------------|------------|
@@ -279,14 +267,9 @@ class STF():
         """
         self.kind = kind
         self.stf_dic = {}
-
-
-    def set_properties(self, **kwargs):
-        """
-        - TAB : file
-        """
         for key, val in kwargs.items():
             self.stf_dic[key] = val
+
 
     
 
