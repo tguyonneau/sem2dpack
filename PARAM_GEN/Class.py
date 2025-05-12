@@ -37,6 +37,9 @@ class Input:
     def set_materials(self, mat_list):
         self.mat_list = mat_list
 
+    def set_sources(self, SRC_list):
+        self.SRC_list = SRC_list
+
     def set_receivers(self, file, isamp, field, AtNode, extra):
         self.rec_dic = {}
         self.rec_dic['file'] = file
@@ -58,6 +61,7 @@ class Input:
         self.write_mesh()
         self.write_BC()
         self.write_materials()
+        self.write_sources()
         self.write_time_scheme()
         self.write_receivers()
         self.write_snapshot()
@@ -161,12 +165,29 @@ class Input:
             input_file.write(f"\n&MATERIAL tag={m.tag}, kind='{m.kind}' /")
             if m.kind == 'ELAST':
                 input_file.write("\n&MAT_ELASTIC")
-            elif m.kind == 'IWAN':
-                input_file.write("\n&MAT_IWAN")
-            elif m.kind == 'VISLA':
-                input_file.write("\n&MAT_VISLA")
+            else :
+                input_file.write(f"\n&MAT_{m.kind}")
             input_file.close()
             self.write_from_dictionnary(m.mat_dic)
+
+    def write_sources(self):
+        try:
+            input_file = open(self.path, 'a')
+            input_file.write("\n")
+            input_file.write("\n #---------- Source parameters ----------")
+            input_file.close()
+            for s in self.SRC_list:
+                input_file = open(self.path, 'a')
+                input_file.write("\n")
+                input_file.write(f"\n&SRC_DEF stf={s.stf}, mechanism='{s.mechanism}, coord='{s.coord}' /")
+                input_file.write(f"\n&STF_{s.stf}")
+                input_file.close()
+                self.write_from_dictionnary(s.stf.stf_dic)
+                input_file = open(self.path, 'a') 
+                input_file.write(f"\n&SRC_{s.mechanism}")
+                self.write_from_dictionnary(s.mechanism.mechanism_dic)
+        except AttributeError:
+            print("No source defined, skipping source section.")
 
     def write_time_scheme(self):
         input_file = open(self.path, 'a')
@@ -178,22 +199,28 @@ class Input:
         self.write_from_dictionnary(self.time_scheme_dic)
 
     def write_receivers(self):
-        input_file = open(self.path, 'a')
-        input_file.write("\n")
-        input_file.write("\n #---------- Receivers ----------")
-        input_file.write("\n")
-        input_file.write("\n&REC_LINE")
-        input_file.close()
-        self.write_from_dictionnary(self.rec_dic)
+        try:
+            input_file = open(self.path, 'a')
+            input_file.write("\n")
+            input_file.write("\n #---------- Receivers ----------")
+            input_file.write("\n")
+            input_file.write("\n&REC_LINE")
+            input_file.close()
+            self.write_from_dictionnary(self.rec_dic)
+        except AttributeError:
+            print("No receivers defined, skipping receiver section.")
 
     def write_snapshot(self):
-        input_file = open(self.path, 'a')
-        input_file.write("\n")
-        input_file.write("\n #---------- Snapshot output settings ----------")
-        input_file.write("\n")
-        input_file.write("\n&SNAP_DEF")
-        input_file.close()
-        self.write_from_dictionnary(self.snap_dic)
+        try:
+            input_file = open(self.path, 'a')
+            input_file.write("\n")
+            input_file.write("\n #---------- Snapshot output settings ----------")
+            input_file.write("\n")
+            input_file.write("\n&SNAP_DEF")
+            input_file.close()
+            self.write_from_dictionnary(self.snap_dic)
+        except AttributeError:
+            print("No snapshot defined, skipping snapshot section.")
             
 
 
@@ -212,9 +239,9 @@ class Material():
         for key, val in kwargs.items():
             self.mat_dic[key] = val
        
-       
+
 class Mesh():
-    def __init__(self, method, *kwargs):
+    def __init__(self, method, **kwargs):
         """
         | Available Meshing | Parameters |
         |------------------|------------|
@@ -254,7 +281,6 @@ class SRC():
         self.mechanism = mechanism
         self.coord = coord
         self.file = file
-        self.src_dic = {}
 
 
 class STF():
@@ -269,6 +295,18 @@ class STF():
         self.stf_dic = {}
         for key, val in kwargs.items():
             self.stf_dic[key] = val
+
+class Mechanism():
+    def __init__(self, kind, **kwargs):
+        """
+        | Available Mechanism | Parameters |
+        |------------------|------------|
+        |       WAVE     | angle, phase       |
+        """
+        self.kind = kind
+        self.mechanism_dic = {}
+        for key, val in kwargs.items():
+            self.mechanism_dic[key] = val
 
 
     
