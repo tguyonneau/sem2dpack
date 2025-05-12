@@ -208,16 +208,6 @@ class Material():
         self.tag = tag
         self.kind = kind
         self.mat_dic = {}
-        if kind == 'ELAST':
-            self.mat_dic['rho'] = 0
-            self.mat_dic['cp'] = 0
-            self.mat_dic['cs'] = 0
-        elif kind == 'IWAN':
-            self.mat_dic['rho'] = 0
-            self.mat_dic['cp'] = 0
-            self.mat_dic['cs'] = 0
-            self.mat_dic['Nspr'] = 0
-            self.mat_dic['gref'] = 0
 
     def set_properties(self, **kwargs):
         """
@@ -237,13 +227,6 @@ class Mesh():
         """
         self.method = method
         self.mesh_dic = {}
-        if method == 'LAYERED':
-            self.mesh_dic['xlim'] = (0,0)
-            self.mesh_dic['zmin'] = 0
-            self.mesh_dic['nx'] = 0
-            self.mesh_dic['file'] = 0
-        elif method== 'MESH2D':
-            self.mesh_dic['file'] = 0
 
     def set_properties(self, **kwargs):
         """
@@ -263,12 +246,6 @@ class BC():
         self.tags = tags
         self.kind = kind
         self.BC_dic = {}
-        if kind == 'DIRNEU' :
-            self.BC_dic['h'] = 0
-            self.BC_dic['v'] = 0
-            self.BC_dic['hstf'] = 0
-            self.BC_dic['vstf'] = 0
-            self.BC_dic['borehole'] = 0
     
     def set_properties(self, **kwargs):
         """
@@ -277,16 +254,32 @@ class BC():
         for key, val in kwargs.items():
             self.BC_dic[key] = val
 
+
+class SRC():
+    def __init__(self, stf, mechanism, coord, file=None):
+        """
+        Available signal types :
+        - TAB
+        Available mechanisms :
+        - WAVE
+        """
+        self.stf = stf
+        self.mechanism = mechanism
+        self.coord = coord
+        self.file = file
+        self.src_dic = {}
+
 class STF():
     def __init__(self,kind):
         """
-        Available sources :
-        - TAB
+        | Available sources | Parameters |
+        |------------------|------------|
+        |       TAB     | file        |
+        |       GAUSSIAN     | ampli, f0, onset      |
         """
         self.kind = kind
         self.stf_dic = {}
-        if kind == 'TAB':
-            self.stf_dic['file'] = 0
+
 
     def set_properties(self, **kwargs):
         """
