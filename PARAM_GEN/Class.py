@@ -142,17 +142,17 @@ class Input:
                 input_file.write(f" kind='{bc.kind}' /")
             else :
                 input_file.write(f"\n&BC_DEF tag={bc.tags}, kind='{bc.kind}' /")
-            if bc.kind == 'DIRNEU':
-                input_file.write("\n&BC_DIRNEU")
+            if bc.kind != 'PERIOD':
+                input_file.write(f"\n&BC_{bc.kind}")
             input_file.close()
             self.write_from_dictionnary(bc.BC_dic)
             for param in bc.BC_dic.keys():
                 if isinstance(bc.BC_dic[param],STF):
-                    if bc.BC_dic[param].kind=='TAB':
-                        input_file = open(self.path, 'a')
-                        input_file.write(f"\n&STF_TAB")
-                        input_file.close()
-                        self.write_from_dictionnary(bc.BC_dic[param].stf_dic)
+                    p = bc.BC_dic[param]
+                    input_file = open(self.path, 'a')
+                    input_file.write(f"\n&STF_{p.kind}")
+                    input_file.close()
+                    self.write_from_dictionnary(p.stf_dic)
 
     def write_materials(self):
         input_file = open(self.path, 'a')
@@ -179,7 +179,9 @@ class Input:
             for s in self.SRC_list:
                 input_file = open(self.path, 'a')
                 input_file.write("\n")
-                input_file.write(f"\n&SRC_DEF stf={s.stf.kind}, mechanism='{s.mechanism.kind}, coord='{s.coord}' /")
+                m_1,e_1 = get_scientific_components(s.coord[0])
+                m_2,e_2 = get_scientific_components(s.coord[0])
+                input_file.write(f"\n&SRC_DEF stf='{s.stf.kind}', mechanism='{s.mechanism.kind}', coord={m_1}d{e_1},{m_2}d /")
                 input_file.write(f"\n&STF_{s.stf.kind}")
                 input_file.close()
                 self.write_from_dictionnary(s.stf.stf_dic)
@@ -262,6 +264,7 @@ class BC():
         |------------------|------------|
         |       PERIOD     | None        |
         |       DIRNEU     | h, v, hstf, vstf, borehole     |
+        |       ABSORB     | Stacey, let_wave  |
         """
         self.tags = tags
         self.kind = kind
