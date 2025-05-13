@@ -153,6 +153,13 @@ class Input:
                     input_file.write(f"\n&STF_{p.kind}")
                     input_file.close()
                     self.write_from_dictionnary(p.stf_dic)
+            if bc.kind == 'DYNFLT':
+                friction = bc.BC_dic['friction']
+                input_file = open(self.path, 'a')
+                input_file.write(f"\n&BC_DYNFLT_{friction.kind}")
+                input_file.close()
+                self.write_from_dictionnary(friction.friction_dic)
+
 
     def write_materials(self):
         input_file = open(self.path, 'a')
@@ -265,6 +272,7 @@ class BC():
         |       PERIOD     | None        |
         |       DIRNEU     | h, v, hstf, vstf, borehole     |
         |       ABSORB     | Stacey, let_wave  |
+        |       DYNFLT     | friction, Sxx, Sxz, otd  |
         """
         self.tags = tags
         self.kind = kind
@@ -311,6 +319,18 @@ class Mechanism():
         self.mechanism_dic = {}
         for key, val in kwargs.items():
             self.mechanism_dic[key] = val
+
+class Friction():
+    def __init__(self, kind, **kwargs):
+        """
+        | Available Friction | Parameters |
+        |------------------|------------|
+        |       SWF     | Dc, MuS, MuD       |
+        """
+        self.kind = kind
+        self.friction_dic = {}
+        for key, val in kwargs.items():
+            self.friction_dic[key] = val
 
 
     
