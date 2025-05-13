@@ -80,6 +80,8 @@ class Input:
                         input_file.write(f" {param}=F,")
                 elif isinstance(target_dic[param],STF) :
                     input_file.write(f" {param}='{target_dic[param].kind}',")
+                elif isinstance(target_dic[param],Friction) :
+                    input_file.write(f" {param}='{target_dic[param].kind}',")
                 else :
                     if isinstance(target_dic[param], Iterable):
                         input_file.write(f" {param}=")
@@ -159,7 +161,6 @@ class Input:
                 input_file.write(f"\n&BC_DYNFLT_{friction.kind}")
                 input_file.close()
                 self.write_from_dictionnary(friction.friction_dic)
-
 
     def write_materials(self):
         input_file = open(self.path, 'a')

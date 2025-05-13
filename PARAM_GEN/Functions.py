@@ -7,7 +7,7 @@ def get_scientific_components(number):
     else :
         exponent = np.floor(np.log10(abs(number)))
         mantissa = number / 10 ** exponent
-        return mantissa, int(exponent)
+        return round(mantissa,7), int(exponent)
     
 def generate_stations_grid(xlim, zlim, dx, dz):
     X = np.arange(xlim[0],xlim[1]+dx,dx)
