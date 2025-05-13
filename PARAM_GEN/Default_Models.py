@@ -6,19 +6,16 @@ def Generate_Prenolin_PSV(dir, xlim, zmin, TotalTime=10., dt=1e-5, nx=1, nx_stat
     #----- General ----------
     Prenolin_PSV.set_general_parameters(ndof=2, ItInfo=10000, ngll=5, iexec=1, fmax=10., verbose='1011')
     #----- Set mesh ---------
-    mesh = Mesh(method='LAYERED')
-    mesh.set_properties(xlim=xlim, zmin=zmin, nx=nx, file='layers')
+    mesh = Mesh(method='LAYERED',xlim=xlim, zmin=zmin, nx=nx, file='layers')
     Prenolin_PSV.set_mesh(mesh)
-    #----- Set source -------
-    source = STF('TAB')
-    source.set_properties(file='inputp1')
+    #----- Set signal -------
+    source = STF('TAB', file='inputp1')
     #----- Set BC -----------
     BC1 = BC((2,4), kind='PERIOD')
-    BC2 = BC(1, kind='DIRNEU')
-    BC2.set_properties(h='N', v='N', hstf=source, vstf=source, borehole=True)
+    BC2 = BC(1, kind='DIRNEU', h='N', v='N', hstf=source, vstf=source, borehole=True)
     Prenolin_PSV.set_BC([BC1,BC2])
     #----- Set time scheme --
-    Prenolin_PSV.set_time_scheme(TotalTime=TotalTime, dt=1e-5, courant=0.3, kind='leapfrog')
+    Prenolin_PSV.set_time_scheme(TotalTime=TotalTime, dt=dt, courant=0.3, kind='leapfrog')
     #Set receivers & snapshot
     X,Z=generate_stations_grid(xlim,[zmin,0],1,2)
     write_stations_file(dir+"/stations",X,Z)
