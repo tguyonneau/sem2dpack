@@ -179,12 +179,13 @@ class Input:
             for s in self.SRC_list:
                 input_file = open(self.path, 'a')
                 input_file.write("\n")
-                input_file.write(f"\n&SRC_DEF stf={s.stf}, mechanism='{s.mechanism}, coord='{s.coord}' /")
-                input_file.write(f"\n&STF_{s.stf}")
+                input_file.write(f"\n&SRC_DEF stf={s.stf.kind}, mechanism='{s.mechanism.kind}, coord='{s.coord}' /")
+                input_file.write(f"\n&STF_{s.stf.kind}")
                 input_file.close()
                 self.write_from_dictionnary(s.stf.stf_dic)
                 input_file = open(self.path, 'a') 
-                input_file.write(f"\n&SRC_{s.mechanism}")
+                input_file.write(f"\n&SRC_{s.mechanism.kind}")
+                input_file.close()
                 self.write_from_dictionnary(s.mechanism.mechanism_dic)
         except AttributeError:
             print("No source defined, skipping source section.")
