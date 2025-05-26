@@ -271,7 +271,7 @@ def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, Amax=1e1):
         ax_2.plot(freq, FFT)
 
     fig.tight_layout()
-    return ax_V, ax_2
+    return fig, ax_V, ax_2
 
 def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
     stations = []
