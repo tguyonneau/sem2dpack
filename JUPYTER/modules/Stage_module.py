@@ -222,7 +222,7 @@ def plot_seismogram(ax, station, comp, val, dic):
 def zero_pad(signal, N):
     return np.pad(signal, (0,N*signal.size), 'constant')
 
-def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, pad=2, Amax=1e1):
+def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, Amax=1e1):
     """
     Configurations :
     - VU : Velocity (V) / Displacement (U) plot
@@ -239,36 +239,39 @@ def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, pad=2, Amax
     fig.suptitle("Input signal")
 
     #Create velocity plot
-    ax_V = fig.add_subplot(1,2,1, aspect='auto')
+    ax_V = fig.add_subplot(2,1,1, aspect='auto')
     ax_V.set_xlabel("Time (s)")
     ax_V.set_ylabel("Velocity (m/s)")
     ax_V.set_title("Input velocity")
     ax_V.grid(True)
-    ax_V.plot(time, input_velocity)
+    ax_V.plot(time, input_velocity, c='b', label='Input Velocity SEM2DPACK')
     
     if config=='VU':
         #Create displacement plot
         input_displacement = compute_displacement(input_velocity, time)
-        ax_D = fig.add_subplot(1,2,2, aspect='auto')
-        ax_D.set_xlabel("Time (s)")
-        ax_D.set_ylabel("Displacement (m)")
-        ax_D.set_title("Input displacement")
-        ax_D.grid(True)
-        ax_D.plot(time, input_displacement)
+        ax_2 = fig.add_subplot(2,1,2, aspect='auto')
+        ax_2.set_xlabel("Time (s)")
+        ax_2.set_ylabel("Displacement (m)")
+        ax_2.set_title("Input displacement")
+        ax_2.grid(True)
+        ax_2.plot(time, input_displacement, c='b', label='Input Displacement SEM2DPACK')
     
     elif config=='VF':
         #Create Fourier plot
         FFT, freq = fourier(zero_pad(input_velocity, N=2),time[1]-time[0])
-        ax_F = fig.add_subplot(1,2,2, aspect='auto')
-        ax_F.set_xlabel("Frequency (Hz)")
-        ax_F.set_ylabel("Spectral amplitude (m)")
-        ax_F.set_title("Fourier transform")
-        ax_F.grid(True)
-        ax_F.set_xscale('log')
-        ax_F.set_yscale('log')
-        ax_F.set_xlim(fmin, fmax)
-        ax_F.set_ylim(1e-5, Amax)
-        ax_F.plot(freq, FFT)
+        ax_2 = fig.add_subplot(2,1,2, aspect='auto')
+        ax_2.set_xlabel("Frequency (Hz)")
+        ax_2.set_ylabel("Spectral amplitude (m)")
+        ax_2.set_title("Fourier transform")
+        ax_2.grid(True)
+        ax_2.set_xscale('log')
+        ax_2.set_yscale('log')
+        ax_2.set_xlim(fmin, fmax)
+        ax_2.set_ylim(1e-5, Amax)
+        ax_2.plot(freq, FFT)
+
+    fig.tight_layout()
+    return ax_V, ax_2
 
 def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
     stations = []
@@ -280,3 +283,19 @@ def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
     for z in Z_pos:
         stations.append(get_nearest_station(x, z, XSTA, ZSTA))
     return np.array(stations)
+
+def write_FLAC_input_signal_table(input_signal_SEM_path):
+    """
+    Write the input signal table for FLAC3D input
+    """
+    #Load input signal
+    input_signal = np.genfromtxt(open(input_signal_SEM_path,'r'))
+    time_input = input_signal[:,0]
+    V_input = input_signal[:,1]
+    #Write the input signal table
+    file = open("./Input_Signal_Table.txt", 'w+')
+    file.write("Input signal\n")
+    file.write(str(time_input.size) + "  " + str(time_input[1]-time_input[0]) + "\n")
+    for i in V_input:
+        file.write(str(i) + "\n")
+    file.close()
