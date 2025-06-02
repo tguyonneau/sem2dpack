@@ -228,24 +228,25 @@ def zero_pad(signal, N):
     return np.pad(signal, (0,N*signal.size), 'constant')
 ###
 
-def plot_input_signal(time, input_velocity, config, fmin=0.01, fmax=50, Amax=1e3):
+def plot_input_signal(time, input_velocity, config, fig=None, fmin=0.01, fmax=50, Amax=1e3):
     """
     Configurations :
     - VU : Velocity (V) / Displacement (U) plot
     - VF : Velocity (V) / Velocity Spectrum (F) plot
     """
-    # #Load input signal
-    # input_signal = np.genfromtxt(open(input_signal_path,'r'))
-    # time = input_signal[:,0]
-    # input_velocity = input_signal[:,1]
 
-    #Create figure
-    fig = plt.figure()
-    fig.subplots_adjust(wspace=0.5)
+    #Create figure if not given
+    if fig ==  None:
+        fig = plt.figure()
+    
     fig.suptitle("Input signal")
+    fig.subplots_adjust(wspace=0.5)
+
+    #Create axes
+    ax_V, ax_2 = fig.subplots(1,2)
+    ax_2.set_aspect('auto')
 
     #Create velocity plot
-    ax_V = fig.add_subplot(2,1,1, aspect='auto')
     ax_V.set_xlabel("Time (s)")
     ax_V.set_ylabel("Velocity (m/s)")
     ax_V.set_title("Input velocity")
@@ -255,7 +256,6 @@ def plot_input_signal(time, input_velocity, config, fmin=0.01, fmax=50, Amax=1e3
     if config=='VU':
         #Create displacement plot
         input_displacement = compute_displacement(input_velocity, time)
-        ax_2 = fig.add_subplot(2,1,2, aspect='auto')
         ax_2.set_xlabel("Time (s)")
         ax_2.set_ylabel("Displacement (m)")
         ax_2.set_title("Input displacement")
@@ -265,7 +265,6 @@ def plot_input_signal(time, input_velocity, config, fmin=0.01, fmax=50, Amax=1e3
     elif config=='VF':
         #Create Fourier plot
         FFT, freq = fourier(zero_pad(input_velocity, N=2),time[1]-time[0])
-        ax_2 = fig.add_subplot(2,1,2, aspect='auto')
         ax_2.set_xlabel("Frequency (Hz)")
         ax_2.set_ylabel("Spectral amplitude (m)")
         ax_2.set_title("Fourier transform")
@@ -276,7 +275,6 @@ def plot_input_signal(time, input_velocity, config, fmin=0.01, fmax=50, Amax=1e3
         ax_2.set_ylim(1e-5, Amax)
         ax_2.plot(freq, FFT, c='b', label='Velocity Fourier Transform SEM2DPACK')
 
-    fig.tight_layout()
     return fig, ax_V, ax_2
 ###
 
@@ -355,80 +353,40 @@ def stockwell(data,tempo, delta=None):
     return stock,X,Y,extent
 ###
 
-# def stockwell(data,tempo, delta=None):
-#     from stockwell import st
-#     import scipy as sp
+def plot_spectrogram(t, signal, fig=None, mappable=None, yscale='linear'):
 
-#     """
-#     Credit: https://github.com/fiorellalan/Seismic-Intensity-Measure/tree/main
-#     :param data : array of amplitude, type=np.array
-#     :parm tipe : array of time samples, type=np.array
-#     """
+    #Compute the Stockwell Transform of the signal
+    stock, _, _, extent = stockwell(signal,t, delta=t[1]-t[0])
 
-#     fny = 1e5
-#     df = 1/(tempo[-1]-tempo[0])
-#     nfreq =int(fny/df)
+    #Create a figure if not given
+    if fig == None:
+        fig = plt.figure()
+
+    fig.suptitle("Spectrogram")
+
+    #Create the axes
+    ax, cax = fig.subplots(1,2,width_ratios=(1,0.1))
     
-#     print ("Nyquist", fny)
-#     while fny > 50:
-#         data,tempo=sp.signal.resample(data,int(len(data)/2),t=tempo)
-#         delta =  tempo[1]-tempo[0]
-#         fny = (1./(2*delta))
-#         nfreq =int(fny/df)
-#         df = 1/(tempo[-1]-tempo[0])
-#         print ("Nyquist", fny)
-        
-#     stock = st.st(data,int(df),nfreq)
-#     stock = np.flipud(stock)
 
-#     time = []
-#     for i_time in range(len(data)):
-#         time.append(i_time*delta)
+    #Load ScalarMappable data
+    if mappable != None:
+        cmap = mappable.get_cmap()
+        clim = mappable.get_clim()
+    else:
+        cmap = 'plasma'
+        clim = [None, None]
 
-#     freq=[]
-#     for i_freq in range(1,nfreq+1):
-#         freq.append(i_freq*df)
+    #Plot the spectrogram
+    im = ax.imshow(np.abs(stock), interpolation='spline16', extent=extent, cmap=cmap, vmin=clim[0], vmax=clim[1])
+    ax.set_xlim(extent[0], extent[1])
+    ax.set_xlabel("Time (s)")
+    ax.set_ylim(0.1, extent[3])
+    ax.set_ylabel("Frequency (Hz)")
+    ax.set_yscale(yscale)
+    ax.axis('tight')
 
-#     X,Y = np.meshgrid(time,freq)
+    #Add a colorbar
+    cbar = plt.colorbar(im, cax=cax)
+    cbar.set_label("Stockwell Magnitude")
 
-#     extent = (time[0] , time[-1], freq[0], freq[-1])
-#     return stock,X,Y,extent
-# ###
-
-def plot_stockwell(t, signal, cmap='plasma_r', figname='fig.png',vmin=None,vmax=None):
-    
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import matplotlib.gridspec as gridspec
-
-    #
-    stock,X,Y,extent = stockwell(signal,t, delta=t[1]- t[0])
-    
-    fig = plt.figure(figsize=(8, 6))
-    gs = gridspec.GridSpec(2, 2, width_ratios=[1, 0.05], height_ratios=[1, 1])  # Equal subplot heights
-    
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax1.plot(t, signal, c='k')
-    plt.grid(True, which='both', axis='both', linewidth=0.1, color='gray', linestyle='--',alpha=0.5)  # Thinner and more frequent gridlines
-    ax1.minorticks_on()
-    ax1.set(ylabel='Acceleration (m/s²)')
-    
-    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)  # Share x-axis
-    im = ax2.imshow(np.abs(stock), interpolation="nearest", extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
-    ax2.axis('tight')
-    ax2.set_yscale('log')
-    ax2.set_xlim(extent[0], extent[1])
-    ax2.set_ylim(0.1, extent[3])
-    ax2.set(xlabel='Time (s)', ylabel='Frequency (Hz)')
-    
-    # Add colorbar only at ax2's height
-    cbar_ax = fig.add_subplot(gs[1, 1])  # Assign only to the second row
-    cbar = plt.colorbar(im, cax=cbar_ax)
-    cbar.set_label("Stockwell magnitude")  
-    
-    plt.tight_layout()  # Adjust layout for better spacing
-    print (f'Saving figure into {figname} !')
-    fig.savefig(figname, dpi=300)
-    plt.close()
-    print ('*')    
-###
+    return fig
