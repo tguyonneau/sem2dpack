@@ -185,10 +185,12 @@ def read_fault_testing(self, ff=np.float32, LENTAG=1, is_rate_and_state=False, f
         print ('Number of dynamic beginning and ending points:', len(index[cdt_beg]), len(index[cdt_end]))   
     ##
     return
+###
 
 def compute_displacement(V,T):
     U = cumulative_simpson(V,x=T)
     return np.insert(U,0,0)
+###
 
 def draw_example(ax, lw=0.5):
     ax.plot([-10, -10], [-30, 30], 'k', lw=lw)
@@ -200,11 +202,13 @@ def draw_example(ax, lw=0.5):
     ax.set_ylim(-60, 35)
     ax.set_xlabel("X (m)")
     ax.set_ylabel("Z (m)")
+###
 
 def get_nearest_station(x,z, XSTA, ZSTA):
     dist = np.sqrt((XSTA-x)**2+(ZSTA-z)**2)
     s_index = np.argmin(dist)
     return s_index
+###
 
 def plot_seismogram(ax, station, comp, val, dic):
     T, U, V, c = dic[comp]
@@ -218,20 +222,22 @@ def plot_seismogram(ax, station, comp, val, dic):
     else :
         raise Exception('Not a valid component')
     ax.set_xlabel("Time (s)")
+###
 
 def zero_pad(signal, N):
     return np.pad(signal, (0,N*signal.size), 'constant')
+###
 
-def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, Amax=1e1):
+def plot_input_signal(time, input_velocity, config, fmin=0.01, fmax=50, Amax=1e3):
     """
     Configurations :
     - VU : Velocity (V) / Displacement (U) plot
     - VF : Velocity (V) / Velocity Spectrum (F) plot
     """
-    #Load input signal
-    input_signal = np.genfromtxt(open(input_signal_path,'r'))
-    time = input_signal[:,0]
-    input_velocity = input_signal[:,1]
+    # #Load input signal
+    # input_signal = np.genfromtxt(open(input_signal_path,'r'))
+    # time = input_signal[:,0]
+    # input_velocity = input_signal[:,1]
 
     #Create figure
     fig = plt.figure()
@@ -268,10 +274,11 @@ def plot_input_signal(input_signal_path, config, fmin=0.01, fmax=50, Amax=1e1):
         ax_2.set_yscale('log')
         ax_2.set_xlim(fmin, fmax)
         ax_2.set_ylim(1e-5, Amax)
-        ax_2.plot(freq, FFT)
+        ax_2.plot(freq, FFT, c='b', label='Velocity Fourier Transform SEM2DPACK')
 
     fig.tight_layout()
     return fig, ax_V, ax_2
+###
 
 def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
     stations = []
@@ -283,6 +290,7 @@ def get_stations_from_layers(layers, xlim, zmin, XSTA, ZSTA):
     for z in Z_pos:
         stations.append(get_nearest_station(x, z, XSTA, ZSTA))
     return np.array(stations)
+###
 
 def write_FLAC_input_signal_table(input_signal_SEM_path):
     """
@@ -299,3 +307,128 @@ def write_FLAC_input_signal_table(input_signal_SEM_path):
     for i in V_input:
         file.write(str(i) + "\n")
     file.close()
+###
+
+def stockwell(data,tempo, delta=None):
+    from stockwell import st
+    import scipy as sp
+
+    """
+    Credit: https://github.com/fiorellalan/Seismic-Intensity-Measure/tree/main
+    :param data : array of amplitude, type=np.array
+    :parm tipe : array of time samples, type=np.array
+    """
+
+    fny = 1/(2*delta)
+    df = 1/(tempo[-1]-tempo[0])
+    nfreq =int(fny/df)
+    
+    print ("Nyquist", fny)
+    while fny > 50:
+        data,tempo=sp.signal.resample(data,int(len(data)/2),t=tempo)
+        delta =  tempo[1]-tempo[0]
+        fny = (1./(2*delta))
+        nfreq =int(fny/df)
+        df = 1/(tempo[-1]-tempo[0])
+        print ("Nyquist", fny)
+
+    fmin = df
+    low =int(fmin/df) 
+    print ("low", fmin/df,low)
+        
+    stock = st.st(data,low,nfreq)
+    stock = np.flipud(stock)
+
+    time = []
+    for i_time in range(len(data)):
+        time.append(i_time*delta)
+
+    freq=[]
+    for i_freq in range(1,nfreq+1):
+        freq.append(i_freq*df)
+
+    X,Y = np.meshgrid(time,freq)
+    halfbin_time = delta/2.
+    halfbin_freq = df/2.
+
+    extent = (time[0] , time[-1], freq[0], freq[-1])
+    return stock,X,Y,extent
+###
+
+# def stockwell(data,tempo, delta=None):
+#     from stockwell import st
+#     import scipy as sp
+
+#     """
+#     Credit: https://github.com/fiorellalan/Seismic-Intensity-Measure/tree/main
+#     :param data : array of amplitude, type=np.array
+#     :parm tipe : array of time samples, type=np.array
+#     """
+
+#     fny = 1e5
+#     df = 1/(tempo[-1]-tempo[0])
+#     nfreq =int(fny/df)
+    
+#     print ("Nyquist", fny)
+#     while fny > 50:
+#         data,tempo=sp.signal.resample(data,int(len(data)/2),t=tempo)
+#         delta =  tempo[1]-tempo[0]
+#         fny = (1./(2*delta))
+#         nfreq =int(fny/df)
+#         df = 1/(tempo[-1]-tempo[0])
+#         print ("Nyquist", fny)
+        
+#     stock = st.st(data,int(df),nfreq)
+#     stock = np.flipud(stock)
+
+#     time = []
+#     for i_time in range(len(data)):
+#         time.append(i_time*delta)
+
+#     freq=[]
+#     for i_freq in range(1,nfreq+1):
+#         freq.append(i_freq*df)
+
+#     X,Y = np.meshgrid(time,freq)
+
+#     extent = (time[0] , time[-1], freq[0], freq[-1])
+#     return stock,X,Y,extent
+# ###
+
+def plot_stockwell(t, signal, cmap='plasma_r', figname='fig.png',vmin=None,vmax=None):
+    
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import matplotlib.gridspec as gridspec
+
+    #
+    stock,X,Y,extent = stockwell(signal,t, delta=t[1]- t[0])
+    
+    fig = plt.figure(figsize=(8, 6))
+    gs = gridspec.GridSpec(2, 2, width_ratios=[1, 0.05], height_ratios=[1, 1])  # Equal subplot heights
+    
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.plot(t, signal, c='k')
+    plt.grid(True, which='both', axis='both', linewidth=0.1, color='gray', linestyle='--',alpha=0.5)  # Thinner and more frequent gridlines
+    ax1.minorticks_on()
+    ax1.set(ylabel='Acceleration (m/s²)')
+    
+    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)  # Share x-axis
+    im = ax2.imshow(np.abs(stock), interpolation="nearest", extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax2.axis('tight')
+    ax2.set_yscale('log')
+    ax2.set_xlim(extent[0], extent[1])
+    ax2.set_ylim(0.1, extent[3])
+    ax2.set(xlabel='Time (s)', ylabel='Frequency (Hz)')
+    
+    # Add colorbar only at ax2's height
+    cbar_ax = fig.add_subplot(gs[1, 1])  # Assign only to the second row
+    cbar = plt.colorbar(im, cax=cbar_ax)
+    cbar.set_label("Stockwell magnitude")  
+    
+    plt.tight_layout()  # Adjust layout for better spacing
+    print (f'Saving figure into {figname} !')
+    fig.savefig(figname, dpi=300)
+    plt.close()
+    print ('*')    
+###
