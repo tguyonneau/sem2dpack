@@ -346,8 +346,10 @@ def stockwell(data,tempo, delta=None):
         freq.append(i_freq*df)
 
     X,Y = np.meshgrid(time,freq)
+    
     halfbin_time = delta/2.
     halfbin_freq = df/2.
+    
 
     extent = (time[0] , time[-1], freq[0], freq[-1])
     return stock,X,Y,extent
@@ -365,7 +367,7 @@ def plot_spectrogram(t, signal, fig=None, mappable=None, yscale='linear'):
     fig.suptitle("Spectrogram")
 
     #Create the axes
-    ax, cax = fig.subplots(1,2,width_ratios=(1,0.1))
+    ax, cax = fig.subplots(1,2,width_ratios=(1,0.05))
     
 
     #Load ScalarMappable data
