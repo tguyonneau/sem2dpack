@@ -187,6 +187,89 @@ def read_fault_testing(self, ff=np.float32, LENTAG=1, is_rate_and_state=False, f
     return
 ###
 
+
+def sem2d_read_fault(model_name,fault_name):
+    
+    # length of the tag at the begining and end of a binary record
+    # in number of single precision words (4*bytes)
+    LENTAG = 2; # gfortran older versions
+    LENTAG = 1;
+    
+    # assumes header file name is FltXX_sem2d.hdr
+    if not os.path.isdir(model_name):
+        print("Wrong path to the model directory...")
+        exit()
+    headfile_exist = os.path.isfile(model_name+"/"+fault_name+"_sem2d.hdr")
+    initfile_exist = os.path.isfile(model_name+"/"+fault_name+"_init_sem2d.tab")
+    datafile_exist = os.path.isfile(model_name+"/"+fault_name+"_sem2d.dat")
+    if (not headfile_exist):
+        print("Miss head file in this directory...")
+        exit()
+    elif (not initfile_exist):
+        print("Miss init file in this directory...")
+        exit()
+    elif (not datafile_exist):
+        print("Miss fault data files in this directory...")
+        exit()
+    
+    data = {}
+    
+    f = open(model_name+"/"+fault_name+"_sem2d.hdr")
+    lines = f.readlines()
+    data['nx'] = int(lines[1].split()[0])
+    ndat       = int(lines[1].split()[1])
+    data['nt'] = int(lines[1].split()[2])
+    data['dt'] = float(lines[1].split()[3])
+    xyz = []
+    for line in lines[4::]:
+        xyz.append(line.split())
+    xyz = np.asarray(xyz).astype(np.float64)
+    data['x'] = xyz[:,0]
+    data['z'] = xyz[:,1]
+
+    # Read initial fault data
+    f = open(model_name+"/"+fault_name+"_init_sem2d.tab")
+    lines = f.readlines()
+    xyz = []
+    for line in lines[4::]:
+        xyz.append(line.split())
+    xyz = np.asarray(xyz).astype(np.float64)
+    data['st0'] = xyz[:,0]
+    data['sn0'] = xyz[:,1]
+    data['mu0'] = xyz[:,2]
+    
+    # Read fault data in a big matrix
+    f   = open(model_name+"/"+fault_name+"_sem2d.dat", "rb")
+    dt  = np.dtype((np.float32, data['nx']+2*LENTAG))
+    raw = np.fromfile(f, dtype=dt)
+
+    raw = np.reshape(raw[:,LENTAG:LENTAG+data['nx']],(int(raw.shape[0]/ndat),ndat, data['nx']));
+
+    # Reformat each field [nx,nt]
+    data['d']  = raw[:,0,:] 
+    data['v']  = raw[:,1,:] 
+    data['st'] = raw[:,2,:] 
+    data['sn'] = raw[:,3,:] 
+    data['mu'] = raw[:,4,:] 
+    if (ndat == 5+4):
+        data['d1t'] = raw[:,5,:] 
+        data['d2t'] = raw[:,6,:] 
+        data['v1t'] = raw[:,7,:] 
+        data['v2t'] = raw[:,8,:] 
+    elif (ndat == 5+4*2):
+        data['d1t'] = raw[:,5,:] 
+        data['d1n'] = raw[:,6,:] 
+        data['d2t'] = raw[:,7,:] 
+        data['d2n'] = raw[:,8,:] 
+        data['v1t'] = raw[:,9,:] 
+        data['v1n'] = raw[:,10,:] 
+        data['v2t'] = raw[:,11,:] 
+        data['v2n'] = raw[:,12,:] 
+
+    return data
+
+###
+
 def compute_displacement(V,T):
     U = cumulative_simpson(V,x=T)
     return np.insert(U,0,0)
@@ -197,7 +280,7 @@ def draw_example(ax, lw=0.5):
     ax.plot([10, 10], [-30, 30], 'k', lw=lw)
     ax.plot([-10, 10], [-30, -30], 'k', lw=lw)
     ax.plot([-10, 10], [30, 30], 'k', lw=lw)
-    ax.plot([-100, 100], [0, 0], 'k', lw=lw/1.5)
+    ax.plot([-250, 250], [0, 0], 'k', lw=lw/1.5)
     ax.set_xlim(-100, 100)
     ax.set_ylim(-60, 35)
     ax.set_xlabel("X (m)")
@@ -392,3 +475,41 @@ def plot_spectrogram(t, signal, fig=None, mappable=None, yscale='linear'):
     cbar.set_label("Stockwell Magnitude")
 
     return fig
+
+###
+
+def read_grid(filepath):
+    values = pd.read_csv(filepath, header=None).to_numpy()
+    grid = np.array([])
+    for i, line in enumerate(values):
+        val = np.array(line[0].split(),dtype=float)
+        if i%2==0:
+            line_values = np.array([])
+            line_values = np.concatenate([line_values, val], axis=0)
+        else:
+            line_values = np.concatenate([line_values, val], axis=0)
+            if i==1:
+                grid = np.concatenate([grid,line_values], axis=0)
+            else:
+                grid = np.vstack([grid,line_values])
+    return grid
+###
+
+def read_grid_values(filepath):
+    values = pd.read_csv(filepath, header=None).to_numpy()
+    stock = np.array([])
+    for i in range(values.size):
+        if i==0:
+            stock = np.array(values[i][0].split(), dtype=float)
+        else:
+            stock = np.vstack([stock, np.array(values[i][0].split(), dtype=float)])
+    return stock
+###
+
+def import_SEM_grid(dir):
+    grid = read_grid(dir+'/USER_2D_grid.inp')
+    e, ii, jj, X, Z = grid[:,0].astype(int), grid[:,1].astype(int), grid[:,2].astype(int), grid[:,3], grid[:,4]
+    grid_values = read_grid_values(dir+'/USER_2D_grid_values.inp')
+    Vs, Vp = grid_values[:,3], grid_values[:,4]
+    SEM_grid = {"e" : e, "ii" : ii, "jj" : jj, "X" : X, "Z" : Z, "grid_values" : grid_values, "Vs" : Vs, "Vp" : Vp}
+    return SEM_grid
