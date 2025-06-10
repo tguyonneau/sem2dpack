@@ -1,0 +1,69 @@
+import os
+import shutil
+import numpy as np
+
+current_dir = os.path.dirname(__file__)
+script_grid = "BATCH_GENERATION/Grid_Generation_Script.py"
+script_ISS = "BATCH_GENERATION/ISS_Input_Generation_Script.py"
+output_directory = "../../INPUT/Batch_1"
+
+#--------PARAMETERS----------------
+
+#Distribution parameters
+Lc_x = 20
+Lc_z = 10
+nu_distrib = 1
+
+# Structure properties
+nu = 0.3
+coeff = np.sqrt(2*(1-nu)/(1-2*nu))
+Vs_struct = 300
+Vp_struct = Vs_struct*coeff
+rho_struct = 2000
+
+#---------------------------------
+
+with open(script_grid) as f:
+    code_grid = f.read()
+
+with open(script_ISS) as f:
+    code_ISS = f.read()
+
+var_ISS = {}
+var_ISS["dir_output"] = current_dir
+exec(code_ISS, var_ISS)
+ISS = var_ISS["ISS"]
+t_max = ISS.time_scheme_dic["TotalTime"]
+dt = t_max = ISS.time_scheme_dic["dt"]
+
+var_grid = {}
+var_grid["dir_script"] = os.path.dirname(script_grid)
+var_grid["Lc_x"] = Lc_x
+var_grid["Lc_z"] = Lc_z
+var_grid["nu_distrib"] = nu_distrib
+var_grid["nu"] = nu
+var_grid["Vs_struct"] = Vs_struct
+var_grid["Vp_struct"] = Vp_struct
+var_grid["rho_struct"] = rho_struct
+
+var_source = {}
+var_source["direct"] = current_dir
+var_source["t_max"] = t_max
+var_source["dt"] = dt
+
+
+for i in range(1):
+    output = output_directory + f"/Case_{i:02d}"
+    var_grid["dir_output"] = output
+    
+    try:
+        os.mkdir(var_grid["dir_output"])
+    except FileExistsError:
+        pass
+    exec(code_grid, var_grid)
+    ISS.write_file()
+    shutil.copy2(current_dir+'/Mesh_ISS.mesh2d', output+'/Mesh_ISS.mesh2d')
+    shutil.copy2(current_dir+'/stations', output+'/stations')
+    shutil.copy2(current_dir+'/Par.inp', output+'/Par.inp')
+os.remove(current_dir+'/stations')
+os.remove(current_dir+'/Par.inp')

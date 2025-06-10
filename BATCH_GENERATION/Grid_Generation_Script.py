@@ -1,7 +1,12 @@
+"""
+This script generates a 2D grid with a stochastic distribution of properties
+It is not meant to be run directly, but rather to be imported in a batch generation script
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.interpolate import griddata, LinearNDInterpolator
+from scipy.interpolate import griddata
 import sys
 import os
 import shutil
@@ -16,21 +21,23 @@ zmin = -100
 zmax = 0
 Lx = xmax - xmin
 Lz = zmax - zmin
-Nx = 100
+Nx = 500
 Nz = 100
 
-# Distribution parameters
-sigma = 1
-Lc_x = Lx/3
-Lc_z = Lz/8
-nu = 1
 
-# Structure properties
-nu = 0.3
 coeff = np.sqrt(2*(1-nu)/(1-2*nu))
-Vs_struct = 300
-Vp_struct = Vs_struct*coeff
-rho_struct = 2000
+
+# # Distribution parameters
+# Lc_x = 2*Lx
+# Lc_z = Lz/10
+# nu_distrib = 1
+
+# # Structure properties
+# nu = 0.3
+# coeff = np.sqrt(2*(1-nu)/(1-2*nu))
+# Vs_struct = 300
+# Vp_struct = Vs_struct*coeff
+# rho_struct = 2000
 
 # Script parameters
 plotting = False
@@ -63,7 +70,7 @@ def compute_spatial_frequencies(Lx, Lz, Nx, Nz):
 
     Parameters :
     Lx, Lz : Domain lengths
-    Nx, Nz : Number of points int the domain
+    Nx, Nz : Number of points in the domain
     """
     kx = 2*np.pi*np.fft.fftfreq(Nx, Lx/Nx)
     kz = 2*np.pi*np.fft.fftfreq(Nz, Lz/Nz)
@@ -101,7 +108,7 @@ def compute_field(SPD):
 X = np.linspace(xmin, xmax, Nx)
 Z = np.linspace(zmin, zmax, Nz)
 kx, kz = compute_spatial_frequencies(Lx, Lz, Nx, Nz)
-S = compute_Von_Karman_SPD(kx, kz, Lc_x, Lc_z, nu=nu)
+S = compute_Von_Karman_SPD(kx, kz, Lc_x, Lc_z, nu=nu_distrib)
 G = compute_field(S)
 
 if plotting:

@@ -9,14 +9,14 @@ from scipy.interpolate import griddata
 sys.path.append(os.path.dirname(__file__)+'/../../modules')
 from Stage_module import *
 
-SEM_grid = import_SEM_grid(os.path.dirname(__file__))
+# SEM_grid = import_SEM_grid(os.path.dirname(__file__))
+SEM_grid = import_SEM_grid("../../INPUT/Batch_1/Case_00")
 X = SEM_grid['X']
 Z = SEM_grid['Z']
 Vs = SEM_grid['Vs']
 
 soil_mask = (Z <= 0)
 structure_mask = (np.abs(Z) < 30) & (np.abs(X) < 10)
-
 norm = colors.Normalize(np.min(Vs), np.max(Vs))
 cmap = 'coolwarm'
 SM = cm.ScalarMappable(norm=norm, cmap=cmap)
