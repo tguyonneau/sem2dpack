@@ -288,7 +288,7 @@ class SRC():
         | Parameters | Options |
         |------------------|------------|
         | Signal types | TAB, GAUSSIAN |
-        | Mechanism    | WAVE         |
+        | Mechanism    | WAVE, FORCE         |
         """
         self.stf = stf
         self.mechanism = mechanism
@@ -315,6 +315,7 @@ class Mechanism():
         | Available Mechanism | Parameters |
         |------------------|------------|
         |       WAVE     | angle, phase       |
+        |   FORCE          | angle
         """
         self.kind = kind
         self.mechanism_dic = {}
