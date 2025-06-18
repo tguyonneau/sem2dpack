@@ -5,21 +5,42 @@ import numpy as np
 current_dir = os.path.dirname(__file__)
 script_grid = "BATCH_GENERATION/Grid_Generation_Script.py"
 script_ISS = "BATCH_GENERATION/ISS_Input_Generation_Script.py"
-output_directory = "../../INPUT/Batch_1"
+script_source = "BATCH_GENERATION/Source_Generation_Script.py"
+
 
 #--------PARAMETERS----------------
 
-#Distribution parameters
-Lc_x = 20
-Lc_z = 10
-nu_distrib = 1
+# Simulation parameters
+TotalTime = 20.0  # Total simulation time in seconds
+angle = 30.0  # Angle of the source mechanism in degrees
 
 # Structure properties
+Vs_struct = 2455.86
+Vp_struct = 4010.4
+rho_struct = 2400.
+
+# Distribution parameters
 nu = 0.3
 coeff = np.sqrt(2*(1-nu)/(1-2*nu))
-Vs_struct = 300
-Vp_struct = Vs_struct*coeff
-rho_struct = 2000
+Lc_x = 40
+Lc_z = 20
+nu_distrib = 1
+Vs_min, Vs_max = 250, 2000
+Vp_min, Vp_max = coeff*Vs_min, coeff*Vs_max
+rho_min, rho_max = 2000., 2000.
+
+# Source parameters
+f0 = 1.  # Dominant frequency of the source in Hz
+onset = 1.5  # Onset time of the source in seconds
+ampli = 0.1  # Amplitude of the source
+
+# Number of runs
+N = 5
+output_directory = f"../../INPUT/Batch_L_{Lc_x:d}_f_{10*f0:02.0f}_I_{angle:02.0f}_Gravity"
+try:
+        os.mkdir(output_directory)
+except FileExistsError:
+        pass
 
 #---------------------------------
 
@@ -29,12 +50,28 @@ with open(script_grid) as f:
 with open(script_ISS) as f:
     code_ISS = f.read()
 
+with open(script_source) as f:
+    code_source = f.read()
+
 var_ISS = {}
 var_ISS["dir_output"] = current_dir
+var_ISS["rho_1"] = rho_min
+var_ISS["rho_2"] = rho_struct
+var_ISS["TotalTime"] = TotalTime
+var_ISS["angle"] = angle
 exec(code_ISS, var_ISS)
 ISS = var_ISS["ISS"]
-t_max = ISS.time_scheme_dic["TotalTime"]
-dt = t_max = ISS.time_scheme_dic["dt"]
+
+
+var_source = {}
+var_source["direct"] = current_dir
+var_source["t_max"] = TotalTime
+var_source["dt"] = ISS.time_scheme_dic["dt"]
+var_source["f0"] = f0
+var_source["onset"] = onset
+var_source["ampli"] = ampli
+
+exec(code_source, var_source)
 
 var_grid = {}
 var_grid["dir_script"] = os.path.dirname(script_grid)
@@ -42,18 +79,19 @@ var_grid["Lc_x"] = Lc_x
 var_grid["Lc_z"] = Lc_z
 var_grid["nu_distrib"] = nu_distrib
 var_grid["nu"] = nu
+var_grid["Vs_min"] = Vs_min
+var_grid["Vs_max"] = Vs_max
+var_grid["Vp_min"] = Vp_min
+var_grid["Vp_max"] = Vp_max
+var_grid["rho_min"] = rho_min
+var_grid["rho_max"] = rho_max
 var_grid["Vs_struct"] = Vs_struct
 var_grid["Vp_struct"] = Vp_struct
 var_grid["rho_struct"] = rho_struct
 
-var_source = {}
-var_source["direct"] = current_dir
-var_source["t_max"] = t_max
-var_source["dt"] = dt
 
-
-for i in range(1):
-    output = output_directory + f"/Case_{i:02d}"
+for i in range(N):
+    output = output_directory + f"/Run_{i:02d}"
     var_grid["dir_output"] = output
     
     try:
@@ -64,6 +102,10 @@ for i in range(1):
     ISS.write_file()
     shutil.copy2(current_dir+'/Mesh_ISS.mesh2d', output+'/Mesh_ISS.mesh2d')
     shutil.copy2(current_dir+'/stations', output+'/stations')
+    shutil.copy2(current_dir+'/source', output+'/source')
+    shutil.copy2(current_dir+'/weight_structure.inp', output+'/weight_structure.inp')
     shutil.copy2(current_dir+'/Par.inp', output+'/Par.inp')
 os.remove(current_dir+'/stations')
+os.remove(current_dir+'/source')
 os.remove(current_dir+'/Par.inp')
+print(f"--------------------------Batch generation completed. {N} runs created in {output_directory} --------------------------")

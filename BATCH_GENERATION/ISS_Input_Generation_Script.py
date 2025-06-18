@@ -20,8 +20,9 @@ mesh = Mesh('MESH2D', file='Mesh_ISS.mesh2d')
 ISS.set_mesh(mesh)
 
 # Set material properties
-mat = Material(1, 'ELAST', rho=2000., cp=700., cs=300.)
-ISS.set_materials([mat])
+mat1 = Material(1, 'ELAST', rho=rho_1, cp=700., cs=300.)
+mat2 = Material(2, 'ELAST', rho=rho_2, cp=700., cs=300.)
+ISS.set_materials([mat1, mat2])
 
 # Set boundary conditions
 Absorb_1 = BC(1, 'ABSORB', Stacey=False, let_wave=True)
@@ -33,23 +34,31 @@ Fault_78 = BC((7, 8), 'DYNFLT', friction=fric, Sxx=-1., Sxz=0.3, otd=1e-5)
 Fault_910 = BC((9, 10), 'DYNFLT', friction=fric, Sxx=-1., Sxz=0.3, otd=1e-5)
 ISS.set_BC([Absorb_1, Absorb_2, Absorb_4, Fault_56, Fault_78, Fault_910])
 
-# # Set sources
-# gauss = STF('GAUSSIAN', ampli=0.1, f0=1., onset=0.7)
-# mecha = Mechanism('WAVE', angle=30., phase='S')
-# source = SRC(gauss, mecha, (0., 0.))
-# ISS.set_sources([source])
+# Set sources
+stf_signal = STF('TAB', file='source')
+mecha_signal = Mechanism('WAVE', angle=angle, phase='S')
+source_signal = SRC(stf_signal, mecha_signal, (0., 0.))
+stf_force = STF('TAB', file='weight_structure.inp')
+mecha_force = Mechanism('FORCE', angle=0.)
+source_force = SRC(stf_force, mecha_force, (0.,0.))
+ISS.set_sources([source_signal, source_force])
 
 # Set time scheme
-ISS.set_time_scheme(TotalTime=5., dt=1e-5, courant=0.3, kind='leapfrog')
+ISS.set_time_scheme(TotalTime=TotalTime, dt=1e-5, courant=0.3, kind='leapfrog')
 
 # Set receivers
-X_left,Z_left = generate_stations_grid([-15., -10.], [-30., 0.], 1., 3.)
-X_bottom,Z_bottom = generate_stations_grid([-10., 10.], [-35., -30.], 1., 3.)
-X_right,Z_right = generate_stations_grid([10., 15.], [-30., 0.], 1., 3.)
-X, Z = np.concatenate((X_left, X_bottom, X_right)), np.concatenate((Z_left, Z_bottom, Z_right))
+interest_size = 30
+X_left_interest,Z_left_interest = generate_stations_grid([-10.-interest_size, -10.], [-30., 0.], 2., 2.)
+X_bottom_interest,Z_bottom_interest = generate_stations_grid([-10.-interest_size, 10.+interest_size], [-30.-interest_size, -30.], 2., 2.)
+X_right_interest,Z_right_interest = generate_stations_grid([10., 10.+interest_size], [-30., 0.], 2., 2.)
+X_left, Z_left = generate_stations_grid([-250, -10.-interest_size], [-30., 0.], 10., 4.)
+X_bottom, Z_bottom = generate_stations_grid([-250, 250], [-100., 30.-interest_size], 10., 4.)
+X_right, Z_right = generate_stations_grid([10.+interest_size,250], [-30., 0.], 10., 4.)
+X_struct, Z_struct = generate_stations_grid([-10,10], [-30., 30.], 2., 2.)
+X, Z = np.concatenate((X_left, X_bottom, X_right, X_left_interest, X_bottom_interest, X_right_interest)), np.concatenate((Z_left, Z_bottom, Z_right, Z_left_interest, Z_bottom_interest, Z_right_interest))
 write_stations_file(dir_output+'/stations', X, Z)
-ISS.set_receivers(file='stations', isamp=20, field='V', AtNode=False, extra=False)
+ISS.set_receivers(file='stations', isamp=100, field='V', AtNode=False, extra=False)
 
 # Set snapshot
-ISS.set_snapshot(itd=10000, fields='V', components='xz', ps=False, bin=False)
+ISS.set_snapshot(itd=20000, fields='V', components='xz', ps=False, bin=False)
 

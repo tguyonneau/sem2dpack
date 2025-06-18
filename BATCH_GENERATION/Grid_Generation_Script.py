@@ -122,20 +122,13 @@ if plotting:
     plt.show()
 
 # S-Wave Velocities
-Vs_min = 100
-Vs_max = 500
 Vs = np.interp(G, (np.min(G), np.max(G)), (Vs_min, Vs_max))
 
 # P-Wave Velocities
-Vp_min = Vs_min*coeff
-Vp_max = Vs_max*coeff
 Vp = np.interp(G, (np.min(G), np.max(G)), (Vp_min, Vp_max))
 
 # Densities
-rho_min = 1500
-rho_max = 3000
-#rho = np.interp(G, (np.min(G), np.max(G)), (rho_min, rho_max))
-rho = 2000*np.ones(Vs.shape)
+rho = np.interp(G, (np.min(G), np.max(G)), (rho_min, rho_max))
 
 # Masks
 soil_mask = (Z_SEM <= 0)
