@@ -2,9 +2,12 @@ import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cm
 import pandas as pd
 from houches_fb import *
 from scipy.integrate import cumulative_simpson
+from scipy.differentiate import derivative
 
 
 
@@ -275,6 +278,11 @@ def compute_displacement(V,T):
     return np.insert(U,0,0)
 ###
 
+def compute_acceleration(V,T):
+    A = np.gradient(V, T)
+    return A
+###
+
 def draw_example(ax, lw=0.5):
     ax.plot([-10, -10], [-30, 30], 'k', lw=lw)
     ax.plot([10, 10], [-30, 30], 'k', lw=lw)
@@ -480,6 +488,7 @@ def plot_spectrogram(t, signal, fig=None, mappable=None, yscale='linear'):
 
 def read_grid(filepath):
     values = pd.read_csv(filepath, header=None).to_numpy()
+    print(values.shape)
     grid = np.array([])
     for i, line in enumerate(values):
         val = np.array(line[0].split(),dtype=float)
@@ -507,9 +516,63 @@ def read_grid_values(filepath):
 ###
 
 def import_SEM_grid(dir):
-    grid = read_grid(dir+'/USER_2D_grid.inp')
+    grid = read_grid(dir+'USER_2D_grid.inp')
     e, ii, jj, X, Z = grid[:,0].astype(int), grid[:,1].astype(int), grid[:,2].astype(int), grid[:,3], grid[:,4]
-    grid_values = read_grid_values(dir+'/USER_2D_grid_values.inp')
+    grid_values = read_grid_values(dir+'USER_2D_grid_values.inp')
     Vs, Vp = grid_values[:,3], grid_values[:,4]
-    SEM_grid = {"e" : e, "ii" : ii, "jj" : jj, "X" : X, "Z" : Z, "grid_values" : grid_values, "Vs" : Vs, "Vp" : Vp}
+    SEM_grid = {"e" : e, "ii" : ii, "jj" : jj, "X" : X, "Z" : Z, "Vs" : Vs, "Vp" : Vp}
     return SEM_grid
+
+###
+
+def visualize_grid(grid, component='Vs', ax=None):
+    X = grid['X']
+    Z = grid['Z']
+    Vs = grid[component]
+
+    soil_mask = (Z <= 0)
+    structure_mask = (np.abs(Z) < 30) & (np.abs(X) < 10)
+    norm = colors.Normalize(np.min(Vs), np.max(Vs))
+    cmap = 'terrain'
+    SM = cm.ScalarMappable(norm=norm, cmap=cmap)
+    if ax is None:
+        fig, ax = plt.subplots()
+    ax.tricontourf(X[soil_mask], Z[soil_mask], Vs[soil_mask], levels=50, cmap=cmap, norm=norm)
+    ax.tricontourf(X[structure_mask], Z[structure_mask], Vs[structure_mask], levels=50, cmap=cmap, norm=norm)
+    draw_example(ax)
+    ax.set_xlim([-250,250])
+    ax.set_ylim([-100,30])
+    plt.colorbar(SM, ax=ax)
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Z (m)")
+    ax.set_title(f"{component} distribution in the soil")
+
+###
+
+def compute_soil_mean(grid, window, component='Vs'):
+    """
+    Compute the mean value of a given component in the soil
+    """
+    X = grid['X']
+    Z = grid['Z']
+    val = grid[component]
+
+    structure_mask = (np.abs(Z) < 30) & (np.abs(X) < 10)
+    mean_mask = (-30-window < Z) & (Z < 0) & (np.abs(X) < 10+window)
+    total_mask = ~structure_mask & mean_mask
+    mean_value = np.mean(val[total_mask])
+    
+    print(f"Mean {component} in the soil: {mean_value:.2f}")
+    return mean_value
+###
+def compute_spatial_frequencies(Lx, Lz, Nx, Nz):
+    """ 
+    Function which compute the spatial frequencies of a grid
+
+    Parameters :
+    Lx, Lz : Domain lengths
+    Nx, Nz : Number of points in the domain
+    """
+    kx = 2*np.pi*np.fft.fftfreq(Nx, Lx/Nx)
+    kz = 2*np.pi*np.fft.fftfreq(Nz, Lz/Nz)
+    return kx, kz
