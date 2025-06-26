@@ -408,7 +408,8 @@ class sem2dpack(object):
 
     try :
       with open(filename, 'rb') as fid:
-        veloc_array = np.fromfile(fid,np.float32)
+        # veloc_array = np.fromfile(fid,np.float32)
+        veloc_array = np.memmap(fid,dtype=np.float32, mode='r')
     except : raise Exception('Velocity file does not exist')
 
     l = len(veloc_array)

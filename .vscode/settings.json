@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./PARAM_GENERATION"
+        "./PARAM_GENERATION",
+        "./JUPYTER/modules"
     ]
 }

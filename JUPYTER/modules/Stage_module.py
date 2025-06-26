@@ -355,7 +355,8 @@ def plot_input_signal(time, input_velocity, config, fig=None, fmin=0.01, fmax=50
     
     elif config=='VF':
         #Create Fourier plot
-        FFT, freq = fourier(zero_pad(input_velocity, N=2),time[1]-time[0])
+        # FFT, freq = fourier(zero_pad(input_velocity, N=2),time[1]-time[0])
+        FFT, freq = fourier(input_velocity,time[1]-time[0])
         ax_2.set_xlabel("Frequency (Hz)")
         ax_2.set_ylabel("Spectral amplitude (m)")
         ax_2.set_title("Fourier transform")
@@ -520,7 +521,7 @@ def import_SEM_grid(dir):
     e, ii, jj, X, Z = grid[:,0].astype(int), grid[:,1].astype(int), grid[:,2].astype(int), grid[:,3], grid[:,4]
     grid_values = read_grid_values(dir+'USER_2D_grid_values.inp')
     Vs, Vp = grid_values[:,3], grid_values[:,4]
-    SEM_grid = {"e" : e, "ii" : ii, "jj" : jj, "X" : X, "Z" : Z, "Vs" : Vs, "Vp" : Vp}
+    SEM_grid = {"e" : e, "ii" : ii, "jj" : jj, "X_grid" : X, "Z_grid" : Z, "Vs" : Vs, "Vp" : Vp}
     return SEM_grid
 
 ###

@@ -9,9 +9,9 @@ script_source = "BATCH_GENERATION/Source_Generation_Script.py"
 
 
 #--------PARAMETERS----------------
-
+#CHANGER DT PLUS BAS !!!!
 # Simulation parameters
-TotalTime = 20.0  # Total simulation time in seconds
+TotalTime = 5.0  # Total simulation time in seconds
 angle = 30.0  # Angle of the source mechanism in degrees
 
 # Structure properties
@@ -30,13 +30,13 @@ Vp_min, Vp_max = coeff*Vs_min, coeff*Vs_max
 rho_min, rho_max = 2000., 2000.
 
 # Source parameters
-f0 = 1.  # Dominant frequency of the source in Hz
-onset = 1.5  # Onset time of the source in seconds
+f0 = 20.  # Dominant frequency of the source in Hz
+onset = 0.5  # Onset time of the source in seconds
 ampli = 0.1  # Amplitude of the source
 
 # Number of runs
-N = 5
-output_directory = f"../../INPUT/Batch_L_{Lc_x:d}_f_{10*f0:02.0f}_I_{angle:02.0f}_Gravity"
+N = 1
+output_directory = f"../../INPUT/Batch_L_{Lc_x:d}_f_{10*f0:02.0f}_I_{angle:02.0f}_Temp_f"
 try:
         os.mkdir(output_directory)
 except FileExistsError:
@@ -66,7 +66,7 @@ ISS = var_ISS["ISS"]
 var_source = {}
 var_source["direct"] = current_dir
 var_source["t_max"] = TotalTime
-var_source["dt"] = ISS.time_scheme_dic["dt"]
+var_source["dt"] = 1e-2#ISS.time_scheme_dic["dt"]
 var_source["f0"] = f0
 var_source["onset"] = onset
 var_source["ampli"] = ampli

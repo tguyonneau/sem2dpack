@@ -1,5 +1,11 @@
 import os
+import sys
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+sys.path.append('JUPYTER/modules')
+from Stage_module import *
 
 def write_source_file(time, source):
     file = open(direct+'/source', 'w+')
@@ -13,6 +19,12 @@ def Gaussian_Source(t, f0, onset, ampli=1.):
     """
     return ampli * np.exp(-((t - onset) ** 2) * (np.pi * f0) ** 2)
 
-time = np.arange(0, t_max, 10*dt)
+time = np.arange(0, t_max, dt)
 stf = Gaussian_Source(time, f0=f0, onset=onset, ampli=ampli)
 write_source_file(time, stf)
+
+# time = np.arange(0,5,1e-5)
+# f0 = 20
+# stf = Gaussian_Source(time, f0=f0, onset=0.5, ampli=0.1)
+# plot_input_signal(time, stf, 'VF', fmax=100)
+# plt.show()
