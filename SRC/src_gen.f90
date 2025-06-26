@@ -80,136 +80,225 @@ contains
 !
 ! END INPUT BLOCK
 
-  subroutine SO_read(so,iin,ndof)
+!   subroutine SO_read(so,iin,ndof)
 
-  use stdio, only : IO_abort,IO_new_unit, IO_file_length, IO_file_columns
-  use echo , only : echo_input,iout
+!   use stdio, only : IO_abort,IO_new_unit, IO_file_length, IO_file_columns
+!   use echo , only : echo_input,iout
 
-  integer, intent(in) :: iin,ndof
-  type(source_type), pointer :: so(:)
+!   integer, intent(in) :: iin,ndof
+!   type(source_type), pointer :: so(:)
 
-  double precision :: coord(NDIME),init_double
-  integer :: i,n, iin2, ncol
-  character(15) :: stf,mechanism
-  character(50) :: file
+!   double precision :: coord(NDIME),init_double
+!   integer :: i,n, iin2, ncol
+!   character(15) :: stf,mechanism
+!   character(50) :: file
 
-  NAMELIST / SRC_DEF / stf,mechanism,coord,file
+!   NAMELIST / SRC_DEF / stf,mechanism,coord,file
 
-  init_double = huge(init_double)
+!   init_double = huge(init_double)
 
-!-- read general parameters
+! !-- read general parameters
 
-  stf = ' '
-  mechanism    = ' '
-  coord        = init_double
-  file         = 'none'
+!   stf = ' '
+!   mechanism    = ' '
+!   coord        = init_double
+!   file         = 'none'
 
-  rewind(iin)
-  read(iin,SRC_DEF,END=200)
+!   rewind(iin)
+!   read(iin,SRC_DEF,END=200)
 
-  if (stf == ' ')  &
-    call IO_abort('SO_read: stf not set')
-  if (mechanism == ' ') &
-    call IO_abort('SO_read: mechanism not set')
-  if (any(coord == init_double) .and. file == 'none') &
-    call IO_abort('SO_read: coord not set')
+!   if (stf == ' ')  &
+!     call IO_abort('SO_read: stf not set')
+!   if (mechanism == ' ') &
+!     call IO_abort('SO_read: mechanism not set')
+!   if (any(coord == init_double) .and. file == 'none') &
+!     call IO_abort('SO_read: coord not set')
 
-  if (echo_input) then
-    if (file == 'none') then
-      write(iout,100) coord
-    else
-      write(iout,105) file
-    endif
-  endif
+!   if (echo_input) then
+!     if (file == 'none') then
+!       write(iout,100) coord
+!     else
+!       write(iout,105) file
+!     endif
+!   endif
 
-!-- store data 
-  if (file == 'none') then
-    n=1
-    allocate(so(1))
-    so(1)%coord = coord
+! !-- store data 
+!   if (file == 'none') then
+!     n=1
+!     allocate(so(1))
+!     so(1)%coord = coord
 
-  else
-    n = IO_file_length(file)
-    ncol = IO_file_columns(file)
-    allocate(so(n))
-    iin2 = IO_new_unit()
-    open(iin2,file=file)
-    select case (ncol)
-      case (2)
-        do i=1,n
-          read(iin2,*) so(i)%coord(:)
-        enddo
-      case (3)
-        do i=1,n
-          read(iin2,*) so(i)%coord(:), so(i)%tdelay
-        enddo
-      case(4)
-        do i=1,n
-          read(iin2,*) so(i)%coord(:), so(i)%tdelay, so(i)%ampli
-        enddo
-      case default
-        call IO_abort('SO_read: inappropriate number of columns in file')
-    end select
-    close(iin2)
-  endif
+!   else
+!     n = IO_file_length(file)
+!     ncol = IO_file_columns(file)
+!     allocate(so(n))
+!     iin2 = IO_new_unit()
+!     open(iin2,file=file)
+!     select case (ncol)
+!       case (2)
+!         do i=1,n
+!           read(iin2,*) so(i)%coord(:)
+!         enddo
+!       case (3)
+!         do i=1,n
+!           read(iin2,*) so(i)%coord(:), so(i)%tdelay
+!         enddo
+!       case(4)
+!         do i=1,n
+!           read(iin2,*) so(i)%coord(:), so(i)%tdelay, so(i)%ampli
+!         enddo
+!       case default
+!         call IO_abort('SO_read: inappropriate number of columns in file')
+!     end select
+!     close(iin2)
+!   endif
 
-  do i=1,n
+!   do i=1,n
   
-   !-- read source time function parameters
-    if (i==1) then
-      allocate(so(i)%stf)
-      call STF_read(stf,so(i)%stf,iin)
-    else
-     ! NOTE: all sources share the same source time function
-      so(i)%stf => so(1)%stf
-    endif
+!    !-- read source time function parameters
+!     if (i==1) then
+!       allocate(so(i)%stf)
+!       call STF_read(stf,so(i)%stf,iin)
+!     else
+!      ! NOTE: all sources share the same source time function
+!       so(i)%stf => so(1)%stf
+!     endif
 
-   !-- read mechanism
-    if (i==1) rewind(iin)
-    select case (mechanism)
-    case('MOMENT','EXPLOSION','DOUBLE_COUPLE')
-        so(i)%mech%kind = tag_moment
-        allocate(so(i)%mech%moment)
-        if (i==1) then
-          call SRC_MOMENT_read(so(i)%mech%moment,iin,mechanism,ndof)
-        else
-          so(i)%mech%moment = so(1)%mech%moment
-        endif
-      case('FORCE')
-        so(i)%mech%kind = tag_force
-        allocate(so(i)%mech%force)
-        if (i==1) then
-          call FORCE_read(so(i)%mech%force,iin)
-        else
-          so(i)%mech%force = so(1)%mech%force
-        endif
-      case('WAVE')
-        so(i)%mech%kind = tag_wave
-        allocate(so(i)%mech%wave)
-        if (i==1) then
-          call WAVE_read(so(i)%mech%wave,iin)
-        else
-          so(i)%mech%wave = so(1)%mech%wave
-        endif
-      case default
-        call IO_abort('SO_read: unknown mechanism ')
-    end select
+!    !-- read mechanism
+!     if (i==1) rewind(iin)
+!     select case (mechanism)
+!     case('MOMENT','EXPLOSION','DOUBLE_COUPLE')
+!         so(i)%mech%kind = tag_moment
+!         allocate(so(i)%mech%moment)
+!         if (i==1) then
+!           call SRC_MOMENT_read(so(i)%mech%moment,iin,mechanism,ndof)
+!         else
+!           so(i)%mech%moment = so(1)%mech%moment
+!         endif
+!       case('FORCE')
+!         so(i)%mech%kind = tag_force
+!         allocate(so(i)%mech%force)
+!         if (i==1) then
+!           call FORCE_read(so(i)%mech%force,iin)
+!         else
+!           so(i)%mech%force = so(1)%mech%force
+!         endif
+!       case('WAVE')
+!         so(i)%mech%kind = tag_wave
+!         allocate(so(i)%mech%wave)
+!         if (i==1) then
+!           call WAVE_read(so(i)%mech%wave,iin)
+!         else
+!           so(i)%mech%wave = so(1)%mech%wave
+!         endif
+!       case default
+!         call IO_abort('SO_read: unknown mechanism ')
+!     end select
 
-  enddo
+!   enddo
 
- return
+!  return
 
-!---- formats and escapes
+! !---- formats and escapes
 
-  100   format(//,' S o u r c e s',/1x,13('='),//5x, &
-     'X-position (meters). . . . .(coord(1)) = ',EN12.3,/5x, &
-     'Y-position (meters). . . . .(coord(2)) = ',EN12.3)
-  105   format(//,' S o u r c e s',/1x,13('='),//5x, &
-     'Source location file . . . . . .(file) = ',A)
-  200   nullify(so) ; return
+!   100   format(//,' S o u r c e s',/1x,13('='),//5x, &
+!      'X-position (meters). . . . .(coord(1)) = ',EN12.3,/5x, &
+!      'Y-position (meters). . . . .(coord(2)) = ',EN12.3)
+!   105   format(//,' S o u r c e s',/1x,13('='),//5x, &
+!      'Source location file . . . . . .(file) = ',A)
+!   200   nullify(so) ; return
 
          
+! end subroutine SO_read
+
+!---------- 19/06/25 THEO : Reading of multiple SRC ------
+
+subroutine SO_read(so, iin, ndof)
+
+  use stdio, only : IO_abort
+  use echo , only : echo_input, iout
+
+  implicit none
+
+  integer, intent(in) :: iin, ndof
+  type(source_type), pointer :: so(:)
+
+  ! Variables NAMELIST
+  double precision :: coord(NDIME), init_double
+  character(15) :: stf, mechanism
+  character(50) :: file
+  namelist /SRC_DEF/ stf, mechanism, coord, file
+
+  ! Variables internes
+  integer, parameter :: nsrc = 2
+  integer :: isrc
+
+  ! Initialisation
+  allocate(so(nsrc))
+  init_double = huge(init_double)
+  rewind(iin)
+
+  ! Boucle de lecture des blocs SRC_DEF
+  do isrc = 1, nsrc
+    ! Réinitialisation avant lecture
+    stf = ' '
+    mechanism = ' '
+    coord = init_double
+    file = 'none'
+
+    read(iin, SRC_DEF, END=200)
+
+    ! Vérification des champs requis
+    if (trim(stf) == '')         call IO_abort('SO_read: stf not set')
+    if (trim(mechanism) == '')   call IO_abort('SO_read: mechanism not set')
+    if (all(coord == init_double) .and. file == 'none') &
+                                 call IO_abort('SO_read: coord not set')
+    if (file /= 'none')          call IO_abort('SO_read: file-based input not supported for multiple SRC_DEF')
+
+    ! Affichage si demandé
+    if (echo_input) then
+      write(iout,100) isrc, coord
+    end if
+
+    ! Stockage des coordonnées
+    so(isrc)%coord = coord
+
+    ! Lecture STF (propre à chaque source)
+    allocate(so(isrc)%stf)
+    call STF_read(stf, so(isrc)%stf, iin)
+
+    ! Lecture mécanisme (propre à chaque source)
+    select case (trim(mechanism))
+    case('MOMENT', 'EXPLOSION', 'DOUBLE_COUPLE')
+      so(isrc)%mech%kind = tag_moment
+      allocate(so(isrc)%mech%moment)
+      call SRC_MOMENT_read(so(isrc)%mech%moment, iin, mechanism, ndof)
+    case('FORCE')
+      so(isrc)%mech%kind = tag_force
+      allocate(so(isrc)%mech%force)
+      call FORCE_read(so(isrc)%mech%force, iin)
+    case('WAVE')
+      so(isrc)%mech%kind = tag_wave
+      allocate(so(isrc)%mech%wave)
+      call WAVE_read(so(isrc)%mech%wave, iin)
+    case default
+      call IO_abort('SO_read: unknown mechanism')
+    end select
+
+  end do
+
+  return
+
+  ! Formats
+100 format(//,' Source #', I2, /1x, 13('='), //, &
+           5x, 'X-position (meters). . . . .(coord(1)) = ', EN12.3, /, &
+           5x, 'Y-position (meters). . . . .(coord(2)) = ', EN12.3)
+
+200 nullify(so)
+    return
+
 end subroutine SO_read
+
 
 !=====================================================================
 !
@@ -296,6 +385,10 @@ end subroutine SO_read
   double precision :: ampli
   integer :: k
 
+  double precision :: t_0
+  double precision :: t_1
+  double precision :: F_bat
+
   if (.not. associated(so)) return
 
   do k=1,size(so)
@@ -303,7 +396,23 @@ end subroutine SO_read
    ! get source amplitude
     ampli = STF_get(so(k)%stf,t-so(k)%tdelay)
     ampli = ampli * so(k)%ampli
-  
+
+   !------- 18/06/25 MODIF THEO ----------
+   ! t_0 = 0.5d0
+   ! t_1 = 1.0d0
+   ! F_bat = -120d6
+!
+   ! if (t < t_0) then
+   !        ampli = 0.0d0
+   ! else if (t > t_1) then
+   !        ampli = 1.0d0
+   ! else
+   !        ampli = (t - t_0) / (t_1 - t_0) 
+   ! end if
+   ! ampli = ampli * F_bat
+   ! ampli = ampli * so(k)%ampli
+   !----------------------------------------
+
    ! add source term
     select case (so(k)%mech%kind)
       case(tag_moment)
