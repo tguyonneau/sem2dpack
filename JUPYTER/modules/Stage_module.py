@@ -6,7 +6,7 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import pandas as pd
 from houches_fb import *
-from scipy.integrate import cumulative_simpson
+#from scipy.integrate import cumulative_simpson
 from scipy.differentiate import derivative
 
 
@@ -147,36 +147,38 @@ def read_fault_testing(self, ff=np.float32, LENTAG=1, is_rate_and_state=False, f
             dum = np.genfromtxt(fname, usecols=6, dtype=str)
             fault['isEq'] = np.array( [bool(util.strtobool(d)) for d in dum] )      
 
-        # Data file III
-        # Read potency and potency rate, currently only for out-of-plane (ndof=1)
-        # for in-plane models change usecols and potency* arrays' size
-        fname = self.directory+'/Flt'+str('%02d' % BC[0])+'_potency_sem2d.tab'        
-        if os.path.exists(fname):
-            print(fname)
-            # POTENCY
-            # out-of plane model -- compo 13
-            # replace D by e for python 
-            array = np.genfromtxt(fname,usecols=0, dtype=None,  encoding=None)
-            array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])
-            fault['potency'] = np.zeros((array_fixed.shape[0], 2))
-            fault['potency_rate'] = np.zeros((array_fixed.shape[0], 2))    
-            fault['potency'][:,0] = array_fixed
+        # EDIT 02/07/25 : No use for potency files
+
+        # # Data file III
+        # # Read potency and potency rate, currently only for out-of-plane (ndof=1)
+        # # for in-plane models change usecols and potency* arrays' size
+        # fname = self.directory+'/Flt'+str('%02d' % BC[0])+'_potency_sem2d.tab'        
+        # if os.path.exists(fname):
+        #     print(fname)
+        #     # POTENCY
+        #     # out-of plane model -- compo 13
+        #     # replace D by e for python 
+        #     array = np.genfromtxt(fname,usecols=0, dtype=None,  encoding=None)
+        #     array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])
+        #     fault['potency'] = np.zeros((array_fixed.shape[0], 2))
+        #     fault['potency_rate'] = np.zeros((array_fixed.shape[0], 2))    
+        #     fault['potency'][:,0] = array_fixed
             
-            # out-of plane model -- compo 23
-            array = np.genfromtxt(fname,usecols=1, dtype=None,  encoding=None)
-            array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])    
-            fault['potency'][:,1] = array_fixed
+        #     # out-of plane model -- compo 23
+        #     array = np.genfromtxt(fname,usecols=1, dtype=None,  encoding=None)
+        #     array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])    
+        #     fault['potency'][:,1] = array_fixed
             
-            # POTENCY RATE
-            # out-of plane model -- compo 13
-            array = np.genfromtxt(fname,usecols=2, dtype=None,  encoding=None)
-            array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])    
-            fault['potency_rate'][:,0] = array_fixed
+        #     # POTENCY RATE
+        #     # out-of plane model -- compo 13
+        #     array = np.genfromtxt(fname,usecols=2, dtype=None,  encoding=None)
+        #     array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])    
+        #     fault['potency_rate'][:,0] = array_fixed
                 
-            # out-of plane model -- compo 23
-            array = np.genfromtxt(fname,usecols=3, dtype=None,  encoding=None)
-            array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])    
-            fault['potency_rate'][:,1] = array_fixed    
+        #     # out-of plane model -- compo 23
+        #     array = np.genfromtxt(fname,usecols=3, dtype=None,  encoding=None)
+        #     array_fixed  = np.array( [float(dum.replace('D','e')) for dum in array])    
+        #     fault['potency_rate'][:,1] = array_fixed    
 
     self.fault = fault        
 
@@ -273,13 +275,67 @@ def sem2d_read_fault(model_name,fault_name):
 
 ###
 
+
+
+def cumulative_simpson(y, x):
+    """
+    Version vectorisée de l'intégrale cumulative de Simpson.
+    Supporte y de forme (n,) ou (n_signaux, n)
+    x doit être 1D de taille n.
+    """
+    y = np.asarray(y)
+    x = np.asarray(x)
+
+    if y.ndim == 1:
+        y = y[np.newaxis, :]  # Devient (1, n)
+
+    n_signaux, n = y.shape
+    if x.shape[0] != n:
+        raise ValueError("x doit avoir la même taille que l'axe temps de y")
+
+    cumint = np.zeros((n_signaux, n))
+    idx = np.arange(2, n, 2)
+    h = x[idx] - x[idx - 2]  # h shape = (k,)
+
+    y0 = y[:, idx - 2]
+    y1 = y[:, idx - 1]
+    y2 = y[:, idx]
+
+    area = (h / 6) * (y0 + 4 * y1 + y2)  # broadcast : (n_signaux, k)
+
+    cum = np.cumsum(area, axis=1)
+    cumint[:, idx] = cum
+
+    # Interpolation linéaire sur les indices impairs
+    for i in range(1, n, 2):
+        if i + 1 < n:
+            cumint[:, i] = 0.5 * (cumint[:, i - 1] + cumint[:, i + 1])
+        else:
+            cumint[:, i] = cumint[:, i - 1]
+
+    # Si entrée 1D, retourne aussi 1D
+    if cumint.shape[0] == 1:
+        return cumint[0]
+    return cumint
+
+
+
+# def compute_displacement(V,T):
+#     U = cumulative_simpson(V,x=T)
+#     return np.insert(U,0,0)
+# ###
+
 def compute_displacement(V,T):
     U = cumulative_simpson(V,x=T)
-    return np.insert(U,0,0)
+    return U
 ###
 
 def compute_acceleration(V,T):
-    A = np.gradient(V, T)
+    dt = T[1] - T[0]
+    if V.ndim != 1:
+        A = np.gradient(V, dt, axis=1)
+    else:
+        A = np.gradient(V, dt)
     return A
 ###
 
@@ -527,8 +583,8 @@ def import_SEM_grid(dir):
 ###
 
 def visualize_grid(grid, component='Vs', ax=None):
-    X = grid['X']
-    Z = grid['Z']
+    X = grid['X_grid']
+    Z = grid['Z_grid']
     Vs = grid[component]
 
     soil_mask = (Z <= 0)
@@ -554,8 +610,8 @@ def compute_soil_mean(grid, window, component='Vs'):
     """
     Compute the mean value of a given component in the soil
     """
-    X = grid['X']
-    Z = grid['Z']
+    X = grid['X_grid']
+    Z = grid['Z_grid']
     val = grid[component]
 
     structure_mask = (np.abs(Z) < 30) & (np.abs(X) < 10)
