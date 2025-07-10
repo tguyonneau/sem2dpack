@@ -23,8 +23,10 @@ time = np.arange(0, t_max, dt)
 stf = Gaussian_Source(time, f0=f0, onset=onset, ampli=ampli)
 write_source_file(time, stf)
 
-# time = np.arange(0,5,1e-5)
-# f0 = 20
-# stf = Gaussian_Source(time, f0=f0, onset=0.5, ampli=0.1)
-# plot_input_signal(time, stf, 'VF', fmax=100)
-# plt.show()
+# time = np.arange(0,12,1e-2)
+# f0 = 5
+# stf = Gaussian_Source(time, f0=f0, onset=3, ampli=0.1)
+# direct='./'
+# # plot_input_signal(time, stf, 'VF', fmax=100)
+# # plt.show()
+# write_source_file(time, stf)

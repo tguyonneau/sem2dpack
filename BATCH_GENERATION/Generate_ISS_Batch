@@ -7,12 +7,20 @@ script_grid = "BATCH_GENERATION/Grid_Generation_Script.py"
 script_ISS = "BATCH_GENERATION/ISS_Input_Generation_Script.py"
 script_source = "BATCH_GENERATION/Source_Generation_Script.py"
 
+#-----------------------------------------------------PARAMETERS-------------------------------------------------------
 
-#--------PARAMETERS----------------
-#CHANGER DT PLUS BAS !!!!
+# Batch parameters
+frequencies = [0.5, 1., 2., 5.]   # Cutoff frequency (Hz)
+angle = [0., 15., 30., 45., 60.]  # Angle of the source mechanism (°)
+carac_length = [40, 200, 1000]    # X-axis characteristic length (m)
+N = 5                             # Number of runs in each batch
+batch_directory = "../../INPUT/Dataset_3"  # Output directory of the batch 
+sub = 10 #Number of batch per subdataset
+
 # Simulation parameters
-TotalTime = 5.0  # Total simulation time in seconds
-angle = 30.0  # Angle of the source mechanism in degrees
+TotalTime = 12.0  # Total simulation time in seconds
+dt = 1e-5 # Time step in seconds
+sampling_time = 1e-2 # Sampling time in seconds
 
 # Structure properties
 Vs_struct = 2455.86
@@ -22,7 +30,6 @@ rho_struct = 2400.
 # Distribution parameters
 nu = 0.3
 coeff = np.sqrt(2*(1-nu)/(1-2*nu))
-Lc_x = 40
 Lc_z = 20
 nu_distrib = 1
 Vs_min, Vs_max = 250, 2000
@@ -30,52 +37,48 @@ Vp_min, Vp_max = coeff*Vs_min, coeff*Vs_max
 rho_min, rho_max = 2000., 2000.
 
 # Source parameters
-f0 = 20.  # Dominant frequency of the source in Hz
-onset = 0.5  # Onset time of the source in seconds
+onset = 3.0  # Onset time of the source in seconds
 ampli = 0.1  # Amplitude of the source
 
-# Number of runs
-N = 1
-output_directory = f"../../INPUT/Batch_L_{Lc_x:d}_f_{10*f0:02.0f}_I_{angle:02.0f}_Temp_f"
-try:
-        os.mkdir(output_directory)
-except FileExistsError:
+
+#-------------------------------------------------SETUP------------------------------------------------------
+
+def create_directory(directory):
+    """
+    Function that create a new directory if not already existing
+    """
+    try:
+        os.mkdir(directory)
+    except FileExistsError:
         pass
 
-#---------------------------------
 
-with open(script_grid) as f:
-    code_grid = f.read()
-
+# Defines the variables to be passed to the Par.inp generation script
 with open(script_ISS) as f:
     code_ISS = f.read()
-
-with open(script_source) as f:
-    code_source = f.read()
-
 var_ISS = {}
 var_ISS["dir_output"] = current_dir
 var_ISS["rho_1"] = rho_min
 var_ISS["rho_2"] = rho_struct
 var_ISS["TotalTime"] = TotalTime
-var_ISS["angle"] = angle
-exec(code_ISS, var_ISS)
-ISS = var_ISS["ISS"]
+var_ISS["dt"] = dt
+var_ISS["sampling_time"] = sampling_time
 
-
+# Defines the variables to be passed to the Source generation script
+with open(script_source) as f:
+    code_source = f.read()
 var_source = {}
 var_source["direct"] = current_dir
 var_source["t_max"] = TotalTime
-var_source["dt"] = 1e-2#ISS.time_scheme_dic["dt"]
-var_source["f0"] = f0
+var_source["dt"] = sampling_time
 var_source["onset"] = onset
 var_source["ampli"] = ampli
 
-exec(code_source, var_source)
-
+# Defines the variables to be passed to the Stochastic Grid generation script
+with open(script_grid) as f:
+    code_grid = f.read()
 var_grid = {}
 var_grid["dir_script"] = os.path.dirname(script_grid)
-var_grid["Lc_x"] = Lc_x
 var_grid["Lc_z"] = Lc_z
 var_grid["nu_distrib"] = nu_distrib
 var_grid["nu"] = nu
@@ -89,23 +92,44 @@ var_grid["Vs_struct"] = Vs_struct
 var_grid["Vp_struct"] = Vp_struct
 var_grid["rho_struct"] = rho_struct
 
+#----------------------------------------- RUN ----------------------------------------------
+create_directory(batch_directory)
+create_directory(batch_directory+"/Dataset30")
+create_directory(batch_directory+"/Dataset31")
+create_directory(batch_directory+"/Dataset32")
+create_directory(batch_directory+"/Dataset33")
+create_directory(batch_directory+"/Dataset34")
+create_directory(batch_directory+"/Dataset35")
+count = 0
+for Lc_x in carac_length:
+     for f0 in frequencies:
+          for theta in angle:
+                i = count // sub
+                count += 1
+                # dir = batch_directory+f"/Batch_L_{Lc_x:d}_f_{10*f0:02.0f}_I_{theta:02.0f}"
+                dir = batch_directory+f"/Dataset3{i}/Batch_L_{Lc_x:d}_f_{10*f0:02.0f}_I_{theta:02.0f}"
+                create_directory(dir)
+                # Assign the running variables
+                var_ISS["angle"] = theta
+                var_source["f0"] = f0
+                var_grid["Lc_x"] = Lc_x
+                # Generates the Par.inp file and the source files
+                exec(code_ISS, var_ISS)
+                exec(code_source, var_source)
+                for n in range(N):
+                    output_directory = dir + f"/Run_{n:02d}"
+                    create_directory(output_directory)
+                    var_grid["dir_output"] = output_directory
+                    # Generates the USER_2D_grid.inp and USER_2D_grid_values.inp files
+                    exec(code_grid, var_grid)
+                    shutil.copy2(current_dir+'/Mesh_ISS.mesh2d', output_directory+'/Mesh_ISS.mesh2d')
+                    shutil.copy2(current_dir+'/stations', output_directory+'/stations')
+                    shutil.copy2(current_dir+'/source', output_directory+'/source')
+                    shutil.copy2(current_dir+'/weight_structure.inp', output_directory+'/weight_structure.inp')
+                    shutil.copy2(current_dir+'/Par.inp', output_directory+'/Par.inp')
+                os.remove(current_dir+'/stations')
+                os.remove(current_dir+'/source')
+                os.remove(current_dir+'/Par.inp')
+                print(f"--------------------------Batch generation completed. {N} runs created in {dir} --------------------------")
 
-for i in range(N):
-    output = output_directory + f"/Run_{i:02d}"
-    var_grid["dir_output"] = output
-    
-    try:
-        os.mkdir(var_grid["dir_output"])
-    except FileExistsError:
-        pass
-    exec(code_grid, var_grid)
-    ISS.write_file()
-    shutil.copy2(current_dir+'/Mesh_ISS.mesh2d', output+'/Mesh_ISS.mesh2d')
-    shutil.copy2(current_dir+'/stations', output+'/stations')
-    shutil.copy2(current_dir+'/source', output+'/source')
-    shutil.copy2(current_dir+'/weight_structure.inp', output+'/weight_structure.inp')
-    shutil.copy2(current_dir+'/Par.inp', output+'/Par.inp')
-os.remove(current_dir+'/stations')
-os.remove(current_dir+'/source')
-os.remove(current_dir+'/Par.inp')
-print(f"--------------------------Batch generation completed. {N} runs created in {output_directory} --------------------------")
+
